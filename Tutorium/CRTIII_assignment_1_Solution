@@ -1,0 +1,101 @@
+#%%
+# Import
+import numpy as np
+import matplotlib.pyplot as plt
+import ICIW_Plots.colors as iciw_colors
+plt.style.use("ICIWstyle")
+import pandas as pd
+from scipy.integrate import solve_ivp
+from lmfit import Minimizer, Parameters, report_fit
+
+#%%
+# Load data
+data = pd.read_csv("experimental_data.csv")
+
+# Inspect first rows
+print(data.head())
+
+# Extract columns for later use
+t_exp = data["time_s"].values
+CA_exp = data["C_A_mol_per_L"].values
+
+
+#%%
+def reaction_odes(t, y, k, n1):
+    CA, CB = y
+    r = k * CA**n1
+    return [-r, r]
+
+def model_CA(t, k, n1, CA0, CB0=0.0):
+    
+    sol = solve_ivp(
+        reaction_odes,
+        t_span=(t.min(), t.max()),
+        y0=[CA0, CB0],
+        t_eval=t,
+        args=(k, n1),
+        method='RK45'
+    )
+    
+    return sol.y[0]
+
+def residual(params, t_exp, CA_exp):
+    k = params['k']
+    n1 = params['n1']
+    
+    CA_model = model_CA(
+        t_exp,
+        k,
+        n1,
+        CA0=CA_exp[0]
+    )
+    
+    return CA_model - CA_exp
+
+params = Parameters()
+params.add('k', value=0.05, min=0)
+params.add('n1', value=1.0, min=0, max=3)
+
+result = Minimizer(residual, params, fcn_args=(t_exp, CA_exp)).minimize()
+report_fit(result)
+
+k_fit = result.params['k'].value
+n1_fit = result.params['n1'].value
+
+CA_model = model_CA(
+    t_exp,
+    k_fit,
+    n1_fit,
+    CA0=CA_exp[0]
+)
+
+
+#%%
+# Plot ICWI
+
+fig, ax = plt.subplots()
+
+# Experimental data (markers)
+ax.scatter(
+    t_exp,
+    CA_exp,
+    label="Experiment",
+    color=iciw_colors.FLAME,
+    marker="o"
+)
+
+# Model curve (line)
+ax.plot(
+    t_exp,
+    CA_model,
+    linestyle="--",
+    color=iciw_colors.CERULEAN,
+    label=fr"Model ($k={k_fit:.4f}\,\mathrm{{s^{{-1}}}}$)"
+)
+
+# Labels (LaTeX-ready if you enable latex style)
+ax.set_xlabel("Time / s")
+ax.set_ylabel(r"$C_A$ / mol L$^{-1}$")
+
+ax.legend()
+plt.show()
