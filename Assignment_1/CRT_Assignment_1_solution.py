@@ -6,7 +6,6 @@ import pandas as pd
 import os
 import matplotlib.pyplot as plt
 import ICIW_Plots.colors as iciw_colors
-
 plt.style.use("ICIWstyle")
 
 # Path to folder with csv-data
@@ -157,7 +156,7 @@ for exp in range(1, n_exp + 1):
 
         # only plot if column exists
         if c_col in df.columns:
-            ax.plot(
+            ax.scatter(
                 df[t_col],
                 df[c_col],
                 label=f"Concentration {comp} Exp. {exp}",
@@ -168,7 +167,7 @@ for exp in range(1, n_exp + 1):
             cumulative += df[c_col]
 
     # Plot cumulative concentration
-    ax.plot(
+    ax.scatter(
         df[t_col],
         cumulative,
         label=f"Cumulative Concentration Exp. {exp}",
@@ -232,7 +231,7 @@ for exp in range(1, n_exp + 1):
 
         # only plot if column exists
         if c_col in df_clean.columns:
-            ax.plot(
+            ax.scatter(
                 df_clean[t_col],
                 df_clean[c_col],
                 label=f"Concentration {comp} Exp. {exp}",
@@ -243,7 +242,7 @@ for exp in range(1, n_exp + 1):
             cumulative += df_clean[c_col]
 
     # Plot cumulative concentration
-    ax.plot(
+    ax.scatter(
         df_clean[t_col],
         cumulative,
         label=f"Cumulative Concentration Exp. {exp}",
@@ -259,3 +258,4 @@ for exp in range(1, n_exp + 1):
     plt.show()
 
 # %%
+
