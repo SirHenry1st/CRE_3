@@ -7,6 +7,8 @@ import os
 import matplotlib.pyplot as plt
 import ICIW_Plots.colors as iciw_colors
 plt.style.use("ICIWstyle")
+import scipy.integrate as integ
+from lmfit import Model, Minimizer, Parameters, report_fit
 
 # Path to folder with csv-data
 path = "2026_Task_data"
@@ -281,3 +283,101 @@ def ode(t, c, k):
     return dcdt
 
 
+def sim_exp(t, c_init, k):
+    t_sp = np.array([t[0], t[-1]])
+    sol = integ.solve_ivp(fun=ode, t_span=t_sp, y0=c_init, method='LSODA', t_eval=t, args=[k])
+    c_sol = sol.y
+    return c_sol
+
+
+def sim_multiple_exps(times, k0, k1, k2, k3, c_inits):
+    sim_concs = []
+    k = [k0, k1, k2, k3]
+
+    # iterate over all experiments
+    nex = len(times)
+    for i in np.arange(0, nex):
+        # assign c and t to run simulation
+        c_0 = c_inits[i]
+        t = times[i]
+
+        # run simulation for one experiment
+        conc = sim_exp(t, c_0, k)
+        sim_concs.append(conc)
+    return sim_concs
+
+
+def residual(params, times, c_inits, data):
+    # number of experiments from length
+    sim_conc = sim_multiple_exps(times, params["k0"], params["k1"], params["k2"], params["k3"], c_inits)
+
+    nex = len(times)
+    concs_flat = np.array([])
+    for i in np.arange(0, nex):
+        concs_flat = np.append(concs_flat, sim_conc[i])
+
+#%%
+
+params = Parameters()
+params.add('k0', value=0.5, min=0, max=10, vary=True)
+params.add('k1', value=0.5, min=0, max=10, vary=True)
+params.add('k2', value=0.5, min=0, max=10, vary=True)
+params.add('k3', value=0.5, min=0, max=10, vary=True)
+
+times   = []
+c_inits = []
+data    = []
+
+for exp in range(1, n_exp + 1):
+    t_col = f"Exp_{exp}_t"
+    c_cols = [f"Exp_{exp}_conc_{comp}" for comp in components]
+
+    if all(col in df_clean.columns for col in c_cols):
+        times.append(df_clean[t_col].values)
+        c_inits.append(df_clean[c_cols].iloc[0].values)
+        data.append(df_clean[c_cols].values.flatten())
+
+print(times)
+print(c_inits)
+print(data)
+
+# #%%
+# 
+# times_2 = []
+# c_inits_2 = []
+# data_2 = []
+# 
+# for exp in range(1, n_exp + 1):
+# 
+#     # time column
+#     t_col = f"Exp_{exp}_t"
+#     t = df_clean[t_col].values
+#     times_2.append(t)
+# 
+#     # initial concentrations
+#     c0 = []
+# 
+#     # full concentration matrix
+#     conc_matrix = []
+# 
+#     for comp in components:
+# 
+#         c_col = f"Exp_{exp}_conc_{comp}"
+# 
+#         c_vals = df_clean[c_col].values
+# 
+#         c0.append(c_vals[0])          # first value = initial value
+#         conc_matrix.append(c_vals)    # full time profile
+# 
+#     c_inits_2.append(np.array(c0))
+#     data_2.append(np.array(conc_matrix))
+# 
+# print(times_2)
+# print(c_inits_2)
+# print(data_2)
+# 
+#%%
+
+minner = Minimizer(residual, params, fcn_args=(times, c_inits, data))
+result = minner.minimize()
+report_fit(result)
