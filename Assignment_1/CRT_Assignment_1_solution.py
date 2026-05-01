@@ -193,9 +193,9 @@ for exp in range(1, n_exp + 1):
 # all stoichiometry is 1 might be correct, but not sure about that
 # 
 # Components, that are not taking part in the reaction, are not shown in further the plots and corresponding 
-# concentration values in the dataframe are removed to avoid confusion.
+# concentration values in the dataframe are set to zero to avoid confusion and stability to the solution.
 
-cols_to_remove = [
+cols_to_zero = [
     "Exp_2_conc_A",
     "Exp_2_conc_B",
     "Exp_2_conc_E",
@@ -214,7 +214,9 @@ cols_to_remove = [
 ]
 
 # Create new dataframe without these columns
-df_clean = df.drop(columns=cols_to_remove)
+df_clean = df.copy()
+
+df_clean[cols_to_zero] = 0.0
 
 print(df_clean.head())
 
@@ -258,4 +260,24 @@ for exp in range(1, n_exp + 1):
     plt.show()
 
 # %%
+# Differential equations
+
+def ode(t, c, k):
+    
+    dcdt = np.zeros_like(c)
+    # calculating the rates
+    r0 = k[0] * c[0] * c[1]     # A + B -> C
+    r1 = k[1] * c[2]            # C -> D
+    r2 = k[2] * c[0] * c[2]     # A + C -> E
+    r3 = k[3] * c[3]            # D -> F
+
+    # calculating the derivatives
+    dcdt[0] = - r0 - r2         # A
+    dcdt[1] = - r0              # B
+    dcdt[2] = + r0 - r1 - r2    # C
+    dcdt[3] = + r1 - r3         # D
+    dcdt[4] = + r2              # E
+    dcdt[5] = + r3              # F
+    return dcdt
+
 
