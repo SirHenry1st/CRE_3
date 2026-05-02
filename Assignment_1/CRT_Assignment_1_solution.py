@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import ICIW_Plots.colors as iciw_colors
 plt.style.use("ICIWstyle")
 import scipy.integrate as integ
+import scipy.optimize as opt
 from lmfit import Model, Minimizer, Parameters, report_fit
 
 # Path to folder with csv-data
@@ -39,93 +40,6 @@ for i, file in enumerate(files, start=1):
 
 # Create final dataframe
 df = pd.DataFrame(data_dict)
-
-##%%
-## First plots of all data
-#
-## Plotting first experiment
-#fig, ax = plt.subplots(figsize=(10,10))
-#ax.plot(df["Exp_1_t"], df["Exp_1_conc_A"], label = {"Concentration A Exp. 1"}, color=iciw_colors.CRIMSON, marker = "o")
-#ax.plot(df["Exp_1_t"], df["Exp_1_conc_B"], label = {"Concentration B Exp. 1"}, color=iciw_colors.CERULEAN, marker = "o")
-#ax.plot(df["Exp_1_t"], df["Exp_1_conc_C"], label = {"Concentration C Exp. 1"}, color=iciw_colors.KELLYGREEN, marker = "o")
-#ax.plot(df["Exp_1_t"], df["Exp_1_conc_D"], label = {"Concentration D Exp. 1"}, color=iciw_colors.FLAME, marker = "o")
-#ax.plot(df["Exp_1_t"], df["Exp_1_conc_E"], label = {"Concentration E Exp. 1"}, color=iciw_colors.DRAB, marker = "o")
-#ax.plot(df["Exp_1_t"], df["Exp_1_conc_F"], label = {"Concentration F Exp. 1"}, color="magenta", marker = "o")
-#ax.plot(df["Exp_1_t"], df["Exp_1_conc_A"]+df["Exp_1_conc_B"]+df["Exp_1_conc_C"]+df["Exp_1_conc_D"]+df["Exp_1_conc_E"]+df["Exp_1_conc_F"], label = {"Cumulative Concentration Exp. 1"}, color="cyan", marker = "o")
-#ax.set_xlabel("t / s")
-#ax.set_ylabel(r'$\mathrm{c}\; / \ \mathrm{\frac{mol}{m^3}}$')
-#ax.legend()
-#plt.show()
-#
-## Plotting second experiment
-#fig, ax = plt.subplots(figsize=(10,10))
-#ax.plot(df["Exp_2_t"], df["Exp_2_conc_A"], label = {"Concentration A Exp. 2"}, color=iciw_colors.CRIMSON, marker = "o")
-#ax.plot(df["Exp_2_t"], df["Exp_2_conc_B"], label = {"Concentration B Exp. 2"}, color=iciw_colors.CERULEAN, marker = "o")
-#ax.plot(df["Exp_2_t"], df["Exp_2_conc_C"], label = {"Concentration C Exp. 2"}, color=iciw_colors.KELLYGREEN, marker = "o")
-#ax.plot(df["Exp_2_t"], df["Exp_2_conc_D"], label = {"Concentration D Exp. 2"}, color=iciw_colors.FLAME, marker = "o")
-#ax.plot(df["Exp_2_t"], df["Exp_2_conc_E"], label = {"Concentration E Exp. 2"}, color=iciw_colors.DRAB, marker = "o")
-#ax.plot(df["Exp_2_t"], df["Exp_2_conc_F"], label = {"Concentration F Exp. 2"}, color="magenta", marker = "o")
-#ax.plot(df["Exp_2_t"], df["Exp_2_conc_A"]+df["Exp_2_conc_B"]+df["Exp_2_conc_C"]+df["Exp_2_conc_D"]+df["Exp_2_conc_E"]+df["Exp_2_conc_F"], label = {"Cumulative Concentration Exp. 2"}, color="cyan", marker = "o")
-#ax.set_xlabel("t / s")
-#ax.set_ylabel(r'$\mathrm{c}\; / \ \mathrm{\frac{mol}{m^3}}$')
-#ax.legend()
-#plt.show()
-#
-## Plotting third experiment
-#fig, ax = plt.subplots(figsize=(10,10))
-#ax.plot(df["Exp_3_t"], df["Exp_3_conc_A"], label = {"Concentration A Exp. 3"}, color=iciw_colors.CRIMSON, marker = "o")
-#ax.plot(df["Exp_3_t"], df["Exp_3_conc_B"], label = {"Concentration B Exp. 3"}, color=iciw_colors.CERULEAN, marker = "o")
-#ax.plot(df["Exp_3_t"], df["Exp_3_conc_C"], label = {"Concentration C Exp. 3"}, color=iciw_colors.KELLYGREEN, marker = "o")
-#ax.plot(df["Exp_3_t"], df["Exp_3_conc_D"], label = {"Concentration D Exp. 3"}, color=iciw_colors.FLAME, marker = "o")
-#ax.plot(df["Exp_3_t"], df["Exp_3_conc_E"], label = {"Concentration E Exp. 3"}, color=iciw_colors.DRAB, marker = "o")
-#ax.plot(df["Exp_3_t"], df["Exp_3_conc_F"], label = {"Concentration F Exp. 3"}, color="magenta", marker = "o")
-#ax.plot(df["Exp_3_t"], df["Exp_3_conc_A"]+df["Exp_3_conc_B"]+df["Exp_3_conc_C"]+df["Exp_3_conc_D"]+df["Exp_3_conc_E"]+df["Exp_3_conc_F"], label = {"Cumulative Concentration Exp. 3"}, color="cyan", marker = "o")
-#ax.set_xlabel("t / s")
-#ax.set_ylabel(r'$\mathrm{c}\; / \ \mathrm{\frac{mol}{m^3}}$')
-#ax.legend()
-#plt.show()
-#
-## Plotting fourth experiment
-#fig, ax = plt.subplots(figsize=(10,10))
-#ax.plot(df["Exp_4_t"], df["Exp_4_conc_A"], label = {"Concentration A Exp. 4"}, color=iciw_colors.CRIMSON, marker = "o")
-#ax.plot(df["Exp_4_t"], df["Exp_4_conc_B"], label = {"Concentration B Exp. 4"}, color=iciw_colors.CERULEAN, marker = "o")
-#ax.plot(df["Exp_4_t"], df["Exp_4_conc_C"], label = {"Concentration C Exp. 4"}, color=iciw_colors.KELLYGREEN, marker = "o")
-#ax.plot(df["Exp_4_t"], df["Exp_4_conc_D"], label = {"Concentration D Exp. 4"}, color=iciw_colors.FLAME, marker = "o")
-#ax.plot(df["Exp_4_t"], df["Exp_4_conc_E"], label = {"Concentration E Exp. 4"}, color=iciw_colors.DRAB, marker = "o")
-#ax.plot(df["Exp_4_t"], df["Exp_4_conc_F"], label = {"Concentration F Exp. 4"}, color="magenta", marker = "o")
-#ax.plot(df["Exp_4_t"], df["Exp_4_conc_A"]+df["Exp_4_conc_B"]+df["Exp_4_conc_C"]+df["Exp_4_conc_D"]+df["Exp_4_conc_E"]+df["Exp_4_conc_F"], label = {"Cumulative Concentration Exp. 4"}, color="cyan", marker = "o")
-#ax.set_xlabel("t / s")
-#ax.set_ylabel(r'$\mathrm{c}\; / \ \mathrm{\frac{mol}{m^3}}$')
-#ax.legend()
-#plt.show()
-#
-## Plotting fifth experiment
-#fig, ax = plt.subplots(figsize=(10,10))
-#ax.plot(df["Exp_5_t"], df["Exp_5_conc_A"], label = {"Concentration A Exp. 5"}, color=iciw_colors.CRIMSON, marker = "o")
-#ax.plot(df["Exp_5_t"], df["Exp_5_conc_B"], label = {"Concentration B Exp. 5"}, color=iciw_colors.CERULEAN, marker = "o")
-#ax.plot(df["Exp_5_t"], df["Exp_5_conc_C"], label = {"Concentration C Exp. 5"}, color=iciw_colors.KELLYGREEN, marker = "o")
-#ax.plot(df["Exp_5_t"], df["Exp_5_conc_D"], label = {"Concentration D Exp. 5"}, color=iciw_colors.FLAME, marker = "o")
-#ax.plot(df["Exp_5_t"], df["Exp_5_conc_E"], label = {"Concentration E Exp. 5"}, color=iciw_colors.DRAB, marker = "o")
-#ax.plot(df["Exp_5_t"], df["Exp_5_conc_F"], label = {"Concentration F Exp. 5"}, color="magenta", marker = "o")
-#ax.plot(df["Exp_5_t"], df["Exp_5_conc_A"]+df["Exp_5_conc_B"]+df["Exp_5_conc_C"]+df["Exp_5_conc_D"]+df["Exp_5_conc_E"]+df["Exp_5_conc_F"], label = {"Cumulative Concentration Exp. 5"}, color="cyan", marker = "o")
-#ax.set_xlabel("t / s")
-#ax.set_ylabel(r'$\mathrm{c}\; / \ \mathrm{\frac{mol}{m^3}}$')
-#ax.legend()
-#plt.show()
-#
-## Plotting sixth experiment
-#fig, ax = plt.subplots(figsize=(10,10))
-#ax.plot(df["Exp_6_t"], df["Exp_6_conc_A"], label = {"Concentration A Exp. 6"}, color=iciw_colors.CRIMSON, marker = "o")
-#ax.plot(df["Exp_6_t"], df["Exp_6_conc_B"], label = {"Concentration B Exp. 6"}, color=iciw_colors.CERULEAN, marker = "o")
-#ax.plot(df["Exp_6_t"], df["Exp_6_conc_C"], label = {"Concentration C Exp. 6"}, color=iciw_colors.KELLYGREEN, marker = "o")
-#ax.plot(df["Exp_6_t"], df["Exp_6_conc_D"], label = {"Concentration D Exp. 6"}, color=iciw_colors.FLAME, marker = "o")
-#ax.plot(df["Exp_6_t"], df["Exp_6_conc_E"], label = {"Concentration E Exp. 6"}, color=iciw_colors.DRAB, marker = "o")
-#ax.plot(df["Exp_6_t"], df["Exp_6_conc_F"], label = {"Concentration F Exp. 6"}, color="magenta", marker = "o")
-#ax.plot(df["Exp_6_t"], df["Exp_6_conc_A"]+df["Exp_6_conc_B"]+df["Exp_6_conc_C"]+df["Exp_6_conc_D"]+df["Exp_6_conc_E"]+df["Exp_6_conc_F"], label = {"Cumulative Concentration Exp. 6"}, color="cyan", marker = "o")
-#ax.set_xlabel("t / s")
-#ax.set_ylabel(r'$\mathrm{c}\; / \ \mathrm{\frac{mol}{m^3}}$')
-#ax.legend()
-#plt.show()
 
 #%%
 
@@ -261,6 +175,59 @@ for exp in range(1, n_exp + 1):
 
     plt.show()
 
+# #%%
+# # Fitting data due to measurement noise
+# # The current amount of noise let's minimizer fail
+# 
+# for exp in range(1, n_exp + 1):
+# 
+#     fig, ax = plt.subplots(figsize=(10,10))
+#     
+#     t_col = f"Exp_{exp}_t"
+#     cumulative = 0
+# 
+#     for comp in components:
+# 
+#         c_col = f"Exp_{exp}_conc_{comp}"
+# 
+#         # fit = opt.curve_fit(lambda t, a, b, c: a*t**2 + b*t + c, df_clean[t_col], df_clean[c_col], p0=[0.1, 0.1, 0.1])
+#         
+#         # only plot if column exists
+#         if c_col in df_clean.columns:
+#             ax.scatter(
+#                 df_clean[t_col],
+#                 df_clean[c_col],
+#                 label=f"Concentration {comp} Exp. {exp}",
+#                 color=colors[comp],
+#                 marker="o"
+#             )
+# 
+#             cumulative += df_clean[c_col]
+#         
+#         #ax.plot(
+#         #        df_clean[t_col], 
+#         #        fit[0][0]*df_clean[t_col]**2 + fit[0][1]*df_clean[t_col] + fit[0][2],
+#         #        label=f"Fitted Concentration {comp} Exp. {exp}",
+#         #        color=colors[comp],
+#         #        linestyle="--"
+#         #    )
+# 
+#     # Plot cumulative concentration
+#     ax.scatter(
+#         df_clean[t_col],
+#         cumulative,
+#         label=f"Cumulative Concentration Exp. {exp}",
+#         color="cyan",
+#         marker="o"
+#     )
+# 
+#     ax.set_xlabel("t / s")
+#     ax.set_ylabel(r'$\mathrm{c}\; / \ \mathrm{\frac{mol}{m^3}}$')
+#     ax.legend()
+#     ax.set_title(f"Experiment {exp}")
+# 
+#     plt.show()
+# 
 # %%
 # Differential equations
 
@@ -315,8 +282,11 @@ def residual(params, times, c_inits, data):
     concs_flat = np.array([])
     for i in np.arange(0, nex):
         concs_flat = np.append(concs_flat, sim_conc[i])
+    return concs_flat - data
 
 #%%
+# Parameters and lists for time, initial concentrations and concentrations
+
 
 params = Parameters()
 params.add('k0', value=0.5, min=0, max=10, vary=True)
@@ -337,47 +307,92 @@ for exp in range(1, n_exp + 1):
         c_inits.append(df_clean[c_cols].iloc[0].values)
         data.append(df_clean[c_cols].values.flatten())
 
-print(times)
-print(c_inits)
-print(data)
+nex = len(data)
+exp_concs_flat = np.array([])
+for i in np.arange(0, nex):
+    exp_concs_flat = np.append(exp_concs_flat, data[i])
 
-# #%%
-# 
-# times_2 = []
-# c_inits_2 = []
-# data_2 = []
-# 
-# for exp in range(1, n_exp + 1):
-# 
-#     # time column
-#     t_col = f"Exp_{exp}_t"
-#     t = df_clean[t_col].values
-#     times_2.append(t)
-# 
-#     # initial concentrations
-#     c0 = []
-# 
-#     # full concentration matrix
-#     conc_matrix = []
-# 
-#     for comp in components:
-# 
-#         c_col = f"Exp_{exp}_conc_{comp}"
-# 
-#         c_vals = df_clean[c_col].values
-# 
-#         c0.append(c_vals[0])          # first value = initial value
-#         conc_matrix.append(c_vals)    # full time profile
-# 
-#     c_inits_2.append(np.array(c0))
-#     data_2.append(np.array(conc_matrix))
-# 
-# print(times_2)
-# print(c_inits_2)
-# print(data_2)
-# 
+# print(times)
+# print(c_inits)
+# print(data)
+
 #%%
+# Minimizer
 
-minner = Minimizer(residual, params, fcn_args=(times, c_inits, data))
+minner = Minimizer(residual, params, fcn_args=(times, c_inits, exp_concs_flat))
 result = minner.minimize()
 report_fit(result)
+
+#%%
+# Plotting the fitted curves
+
+model = Model(sim_multiple_exps, independent_vars=['times', 'c_inits'])
+
+best_fit = sim_multiple_exps(times=times, k0=result.params['k0'], k1=result.params['k1'], k2=result.params['k2'], k3=result.params['k3'], c_inits=c_inits)
+
+
+# Plot data + fitted curves
+for exp in range(1, n_exp + 1):
+
+    fig, ax = plt.subplots(figsize=(10,10))
+
+    t_col = f"Exp_{exp}_t"
+    t_vals = df_clean[t_col].values
+
+    cumulative_data = 0
+    cumulative_fit = 0
+
+    # fitted concentrations for this experiment
+    fit_exp = best_fit[exp - 1]
+
+    for j, comp in enumerate(components):
+
+        c_col = f"Exp_{exp}_conc_{comp}"
+
+        if c_col in df_clean.columns:
+
+            # experimental points
+            ax.scatter(
+                t_vals,
+                df_clean[c_col],
+                label=f"Data {comp} Exp. {exp}",
+                color=colors[comp],
+                marker="o"
+            )
+
+            # fitted curve
+            ax.plot(
+                t_vals,
+                fit_exp[j],
+                color=colors[comp],
+                linewidth=2,
+                linestyle="-",
+                label=f"Fit {comp} Exp. {exp}"
+            )
+
+            cumulative_data += df_clean[c_col]
+            cumulative_fit += fit_exp[j]
+
+    # cumulative measured data
+    ax.scatter(
+        t_vals,
+        cumulative_data,
+        label=f"Cumulative Data Exp. {exp}",
+        color="cyan",
+        marker="o"
+    )
+
+    # cumulative fitted curve
+    ax.plot(
+        t_vals,
+        cumulative_fit,
+        label=f"Cumulative Fit Exp. {exp}",
+        color="cyan",
+        linewidth=2
+    )
+
+    ax.set_xlabel("t / s")
+    ax.set_ylabel(r'$\mathrm{c}\; / \ \mathrm{\frac{mol}{m^3}}$')
+    ax.set_title(f"Experiment {exp}")
+    ax.legend()
+    plt.show()
