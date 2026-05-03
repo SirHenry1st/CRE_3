@@ -175,59 +175,6 @@ for exp in range(1, n_exp + 1):
 
     plt.show()
 
-# #%%
-# # Fitting data due to measurement noise
-# # The current amount of noise let's minimizer fail
-# 
-# for exp in range(1, n_exp + 1):
-# 
-#     fig, ax = plt.subplots(figsize=(10,10))
-#     
-#     t_col = f"Exp_{exp}_t"
-#     cumulative = 0
-# 
-#     for comp in components:
-# 
-#         c_col = f"Exp_{exp}_conc_{comp}"
-# 
-#         # fit = opt.curve_fit(lambda t, a, b, c: a*t**2 + b*t + c, df_clean[t_col], df_clean[c_col], p0=[0.1, 0.1, 0.1])
-#         
-#         # only plot if column exists
-#         if c_col in df_clean.columns:
-#             ax.scatter(
-#                 df_clean[t_col],
-#                 df_clean[c_col],
-#                 label=f"Concentration {comp} Exp. {exp}",
-#                 color=colors[comp],
-#                 marker="o"
-#             )
-# 
-#             cumulative += df_clean[c_col]
-#         
-#         #ax.plot(
-#         #        df_clean[t_col], 
-#         #        fit[0][0]*df_clean[t_col]**2 + fit[0][1]*df_clean[t_col] + fit[0][2],
-#         #        label=f"Fitted Concentration {comp} Exp. {exp}",
-#         #        color=colors[comp],
-#         #        linestyle="--"
-#         #    )
-# 
-#     # Plot cumulative concentration
-#     ax.scatter(
-#         df_clean[t_col],
-#         cumulative,
-#         label=f"Cumulative Concentration Exp. {exp}",
-#         color="cyan",
-#         marker="o"
-#     )
-# 
-#     ax.set_xlabel("t / s")
-#     ax.set_ylabel(r'$\mathrm{c}\; / \ \mathrm{\frac{mol}{m^3}}$')
-#     ax.legend()
-#     ax.set_title(f"Experiment {exp}")
-# 
-#     plt.show()
-# 
 # %%
 # Differential equations
 
@@ -274,25 +221,45 @@ def sim_multiple_exps(times, k0, k1, k2, k3, c_inits):
     return sim_concs
 
 
-def residual(params, times, c_inits, data):
-    # number of experiments from length
-    sim_conc = sim_multiple_exps(times, params["k0"], params["k1"], params["k2"], params["k3"], c_inits)
+#def residual(params, times, c_inits, data):
+#    # number of experiments from length
+#    sim_conc = sim_multiple_exps(times, params["k0"], params["k1"], params["k2"], params["k3"], c_inits)
+#
+#    nex = len(times)
+#    concs_flat = np.array([])
+#    for i in np.arange(0, nex):
+#        concs_flat = np.append(concs_flat, sim_conc[i])
+#    return concs_flat - data
 
-    nex = len(times)
-    concs_flat = np.array([])
+def residual(params, times, c_inits, data):
+
+    sim_conc = sim_multiple_exps(
+        times,
+        params["k0"],
+        params["k1"],
+        params["k2"],
+        params["k3"],
+        c_inits
+    )
+
+    sim_flat = np.array([])
     for i in np.arange(0, nex):
-        concs_flat = np.append(concs_flat, sim_conc[i])
-    return concs_flat - data
+        sim_flat = np.append(sim_flat, sim_conc[i])
+
+    # weighting
+    sigma = 0.02 + 0.05 * np.abs(data)
+
+    return (sim_flat - data) / sigma
 
 #%%
 # Parameters and lists for time, initial concentrations and concentrations
 
 
 params = Parameters()
-params.add('k0', value=0.5, min=0, max=10, vary=True)
-params.add('k1', value=0.5, min=0, max=10, vary=True)
-params.add('k2', value=0.5, min=0, max=10, vary=True)
-params.add('k3', value=0.5, min=0, max=10, vary=True)
+params.add('k0', value=0.15, min=0, max=10, vary=True)
+params.add('k1', value=0.03, min=0, max=10, vary=True)
+params.add('k2', value=0.05, min=0, max=10, vary=True)
+params.add('k3', value=0.01, min=0, max=10, vary=True)
 
 times   = []
 c_inits = []
@@ -304,7 +271,17 @@ for exp in range(1, n_exp + 1):
 
     if all(col in df_clean.columns for col in c_cols):
         times.append(df_clean[t_col].values)
-        c_inits.append(df_clean[c_cols].iloc[0].values)
+        row = df_clean[c_cols].iloc[0].values
+
+        c0 = []
+
+        for val in row:
+            if val >= 0.5:
+                c0.append(1.0)
+            else:
+                c0.append(0.0)
+
+        c_inits.append(np.array(c0))
         data.append(df_clean[c_cols].values.flatten())
 
 nex = len(data)
@@ -368,6 +345,102 @@ for exp in range(1, n_exp + 1):
                 linewidth=2,
                 linestyle="-",
                 label=f"Fit {comp} Exp. {exp}"
+            )
+
+            cumulative_data += df_clean[c_col]
+            cumulative_fit += fit_exp[j]
+
+    # cumulative measured data
+    ax.scatter(
+        t_vals,
+        cumulative_data,
+        label=f"Cumulative Data Exp. {exp}",
+        color="cyan",
+        marker="o"
+    )
+
+    # cumulative fitted curve
+    ax.plot(
+        t_vals,
+        cumulative_fit,
+        label=f"Cumulative Fit Exp. {exp}",
+        color="cyan",
+        linewidth=2
+    )
+
+    ax.set_xlabel("t / s")
+    ax.set_ylabel(r'$\mathrm{c}\; / \ \mathrm{\frac{mol}{m^3}}$')
+    ax.set_title(f"Experiment {exp}")
+    ax.legend()
+    plt.show()
+
+#%%
+# Making fit better with correct reaction orders
+
+def ode(t, c, k):
+    
+    dcdt = np.zeros_like(c)
+    # calculating the rates
+    r0 = k[0] * c[0] * c[1]     # A + B -> C
+    r1 = k[1] * np.power(c[2], 2)            # C -> D
+    r2 = k[2] * c[0] * c[2]    # A + C -> E
+    r3 = k[3] * np.power(c[3], 0)            # D -> F
+
+    # calculating the derivatives
+    dcdt[0] = - r0 - r2         # A
+    dcdt[1] = - r0              # B
+    dcdt[2] = + r0 - r1 - r2    # C
+    dcdt[3] = + r1 - r3         # D
+    dcdt[4] = + r2              # E
+    dcdt[5] = + r3              # F
+    return dcdt
+
+minner = Minimizer(residual, params, fcn_args=(times, c_inits, exp_concs_flat))
+result = minner.minimize()
+report_fit(result)
+
+model = Model(sim_multiple_exps, independent_vars=['times', 'c_inits'])
+
+best_fit = sim_multiple_exps(times=times, k0=result.params['k0'], k1=result.params['k1'], k2=result.params['k2'], k3=result.params['k3'], c_inits=c_inits)
+
+
+# Plot data + fitted curves
+for exp in range(1, n_exp + 1):
+
+    fig, ax = plt.subplots(figsize=(10,10))
+
+    t_col = f"Exp_{exp}_t"
+    t_vals = df_clean[t_col].values
+
+    cumulative_data = 0
+    cumulative_fit = 0
+
+    # fitted concentrations for this experiment
+    fit_exp = best_fit[exp - 1]
+
+    for j, comp in enumerate(components):
+
+        c_col = f"Exp_{exp}_conc_{comp}"
+
+        if c_col in df_clean.columns:
+
+            # experimental points
+            ax.scatter(
+                t_vals,
+                df_clean[c_col],
+                label=f"Data {comp} Exp. {exp}",
+                color=colors[comp],
+                marker="o"
+            )
+
+            # fitted curve
+            ax.plot(
+                t_vals,
+                fit_exp[j],
+                color=colors[comp],
+                linewidth=2,
+                linestyle="-",
+                label=f"Best Fit {comp} Exp. {exp}"
             )
 
             cumulative_data += df_clean[c_col]
