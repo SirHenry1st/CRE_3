@@ -108,7 +108,7 @@ for exp in range(1, n_exp + 1):
 # D -> F
 # all stoichiometry is 1 might be correct, but not sure about that
 # 
-# Components, that are not taking part in the reaction, are not shown in further the plots and corresponding 
+# Components, that are not taking part in the reaction and their corresponding 
 # concentration values in the dataframe are set to zero to avoid confusion and stability to the solution.
 
 cols_to_zero = [
@@ -259,7 +259,7 @@ params = Parameters()
 params.add('k0', value=0.15, min=0, max=10, vary=True)
 params.add('k1', value=0.03, min=0, max=10, vary=True)
 params.add('k2', value=0.05, min=0, max=10, vary=True)
-params.add('k3', value=0.01, min=0, max=10, vary=True)
+params.add('k3', value=0.001, min=0, max=1, vary=True)
 
 times   = []
 c_inits = []
@@ -377,14 +377,14 @@ for exp in range(1, n_exp + 1):
 #%%
 # Making fit better with correct reaction orders
 
-def ode(t, c, k):
+def ode_better(t, c, k):
     
     dcdt = np.zeros_like(c)
     # calculating the rates
-    r0 = k[0] * c[0] * c[1]     # A + B -> C
-    r1 = k[1] * np.power(c[2], 2)            # C -> D
-    r2 = k[2] * c[0] * c[2]    # A + C -> E
-    r3 = k[3] * np.power(c[3], 0)            # D -> F
+    r0 = k[0] * np.power(c[0], 1) * np.power(c[1], 0.01)                 # A + B -> C
+    r1 = k[1] * np.power(c[2], 1)           # C -> D
+    r2 = k[2] * c[0] * c[2]                 # A + C -> E
+    r3 = k[3] * np.power(c[3], 1)           # D -> F
 
     # calculating the derivatives
     dcdt[0] = - r0 - r2         # A
@@ -395,14 +395,66 @@ def ode(t, c, k):
     dcdt[5] = + r3              # F
     return dcdt
 
-minner = Minimizer(residual, params, fcn_args=(times, c_inits, exp_concs_flat))
-result = minner.minimize()
+
+def sim_exp_better(t, c_init, k):
+    t_sp = np.array([t[0], t[-1]])
+    sol = integ.solve_ivp(fun=ode_better, t_span=t_sp, y0=c_init, method='LSODA', t_eval=t, args=[k])
+    c_sol = sol.y
+    return c_sol
+
+def sim_multiple_exps_better(times, k0, k1, k2, k3, c_inits):
+    sim_concs = []
+    k = [k0, k1, k2, k3]
+
+    # iterate over all experiments
+    nex = len(times)
+    for i in np.arange(0, nex):
+        # assign c and t to run simulation
+        c_0 = c_inits[i]
+        t = times[i]
+
+        # run simulation for one experiment
+        conc = sim_exp_better(t, c_0, k)
+        sim_concs.append(conc)
+    return sim_concs
+
+#def residual(params, times, c_inits, data):
+#    # number of experiments from length
+#    sim_conc = sim_multiple_exps(times, params["k0"], params["k1"], params["k2"], params["k3"], c_inits)
+#
+#    nex = len(times)
+#    concs_flat = np.array([])
+#    for i in np.arange(0, nex):
+#        concs_flat = np.append(concs_flat, sim_conc[i])
+#    return concs_flat - data
+
+def residual_better(params, times, c_inits, data):
+
+    sim_conc = sim_multiple_exps_better(
+        times,
+        params["k0"],
+        params["k1"],
+        params["k2"],
+        params["k3"],
+        c_inits
+    )
+
+    sim_flat = np.array([])
+    for i in np.arange(0, nex):
+        sim_flat = np.append(sim_flat, sim_conc[i])
+
+    # weighting
+    sigma = 0.02 + 0.05 * np.abs(data)
+
+    return (sim_flat - data) / sigma
+
+minner_better = Minimizer(residual_better, params, fcn_args=(times, c_inits, exp_concs_flat))
+result = minner_better.minimize()
 report_fit(result)
 
-model = Model(sim_multiple_exps, independent_vars=['times', 'c_inits'])
+model = Model(sim_multiple_exps_better, independent_vars=['times', 'c_inits'])
 
-best_fit = sim_multiple_exps(times=times, k0=result.params['k0'], k1=result.params['k1'], k2=result.params['k2'], k3=result.params['k3'], c_inits=c_inits)
-
+best_fit_better = sim_multiple_exps_better(times=times, k0=result.params['k0'], k1=result.params['k1'], k2=result.params['k2'], k3=result.params['k3'], c_inits=c_inits)
 
 # Plot data + fitted curves
 for exp in range(1, n_exp + 1):
@@ -416,7 +468,7 @@ for exp in range(1, n_exp + 1):
     cumulative_fit = 0
 
     # fitted concentrations for this experiment
-    fit_exp = best_fit[exp - 1]
+    fit_exp_better = best_fit_better[exp - 1]
 
     for j, comp in enumerate(components):
 
@@ -436,7 +488,7 @@ for exp in range(1, n_exp + 1):
             # fitted curve
             ax.plot(
                 t_vals,
-                fit_exp[j],
+                fit_exp_better[j],
                 color=colors[comp],
                 linewidth=2,
                 linestyle="-",
@@ -444,7 +496,7 @@ for exp in range(1, n_exp + 1):
             )
 
             cumulative_data += df_clean[c_col]
-            cumulative_fit += fit_exp[j]
+            cumulative_fit += fit_exp_better[j]
 
     # cumulative measured data
     ax.scatter(
