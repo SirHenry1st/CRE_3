@@ -242,14 +242,17 @@ def residual(params, times, c_inits, data):
         c_inits
     )
 
+    nex = len(times)
     sim_flat = np.array([])
     for i in np.arange(0, nex):
         sim_flat = np.append(sim_flat, sim_conc[i])
 
-    # weighting
-    sigma = 0.02 + 0.05 * np.abs(data)
+    # # weighting
+    # sigma = 0.02 + 0.05 * np.abs(data)
+    # 
+    # return (sim_flat - data) / sigma
 
-    return (sim_flat - data) / sigma
+    return sim_flat - data
 
 #%%
 # Parameters and lists for time, initial concentrations and concentrations
@@ -261,7 +264,7 @@ params.add('k1', value=0.03, min=0, max=10, vary=True)
 params.add('k2', value=0.05, min=0, max=10, vary=True)
 params.add('k3', value=0.001, min=0, max=1, vary=True)
 
-times   = []
+t_eval   = []
 c_inits = []
 data    = []
 
@@ -270,7 +273,7 @@ for exp in range(1, n_exp + 1):
     c_cols = [f"Exp_{exp}_conc_{comp}" for comp in components]
 
     if all(col in df_clean.columns for col in c_cols):
-        times.append(df_clean[t_col].values)
+        t_eval.append(df_clean[t_col].values)
         row = df_clean[c_cols].iloc[0].values
 
         c0 = []
@@ -296,7 +299,7 @@ for i in np.arange(0, nex):
 #%%
 # Minimizer
 
-minner = Minimizer(residual, params, fcn_args=(times, c_inits, exp_concs_flat))
+minner = Minimizer(residual, params, fcn_args=(t_eval, c_inits, exp_concs_flat))
 result = minner.minimize()
 report_fit(result)
 
@@ -305,7 +308,7 @@ report_fit(result)
 
 model = Model(sim_multiple_exps, independent_vars=['times', 'c_inits'])
 
-best_fit = sim_multiple_exps(times=times, k0=result.params['k0'], k1=result.params['k1'], k2=result.params['k2'], k3=result.params['k3'], c_inits=c_inits)
+best_fit = sim_multiple_exps(times=t_eval, k0=result.params['k0'], k1=result.params['k1'], k2=result.params['k2'], k3=result.params['k3'], c_inits=c_inits)
 
 
 # Plot data + fitted curves
@@ -374,6 +377,7 @@ for exp in range(1, n_exp + 1):
     ax.legend()
     plt.show()
 
+
 #%%
 # Making fit better with correct reaction orders
 
@@ -381,10 +385,10 @@ def ode_better(t, c, k):
     
     dcdt = np.zeros_like(c)
     # calculating the rates
-    r0 = k[0] * np.power(c[0], 1) * np.power(c[1], 0.01)                 # A + B -> C
-    r1 = k[1] * np.power(c[2], 1)           # C -> D
-    r2 = k[2] * c[0] * c[2]                 # A + C -> E
-    r3 = k[3] * np.power(c[3], 1)           # D -> F
+    r0 = k[0] * np.power(c[0], 1) * np.power(c[1], 0.01)                # A + B -> C
+    r1 = k[1] * np.power(c[2], 1)                                       # C -> D
+    r2 = k[2] * c[0] * c[2]                                             # A + C -> E
+    r3 = k[3] * np.power(c[3], 1)                                       # D -> F
 
     # calculating the derivatives
     dcdt[0] = - r0 - r2         # A
