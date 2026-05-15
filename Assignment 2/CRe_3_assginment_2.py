@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import ICIW_Plots.colors as iciw_colors
 from CoolProp.CoolProp import PropsSI
 
-#%%
+
 # Load thermodynamic data
 
 # define function with arguments temperature and name of component
