@@ -90,111 +90,54 @@ if matrix_rank(N11) == rank_N:
 else:
     print("\nThe chosen set is not valid. Another set must be selected.")
 
+# # ---------------------------------------------------------
+# Reaction extent calculation example
 # ---------------------------------------------------------
-# 6. Verification using atom balance
-# Atom matrix order: C, H, O
+
+# Use only independent reactions R1, R2 and R4
+N_independent = N_stoich[:, key_reaction_idx]
+
+# Example inlet molar flow rates in mol/s
 # Component order: CO2, H2, CH3OH, H2O, CO, DME
-# ---------------------------------------------------------
+n_in = np.array([2.0, 6.0, 0.0, 0.0, 1.0, 0.0])
 
-atom_matrix = np.array([
-    [1, 0, 1, 0, 1, 2],   # Carbon atoms
-    [0, 2, 4, 2, 0, 6],   # Hydrogen atoms
-    [2, 0, 1, 1, 1, 1]    # Oxygen atoms
-], dtype=float)
+# Example measured changes of key components
+# CO2 consumed by 0.8 mol/s
+# CO consumed by 0.4 mol/s
+# DME formed by 0.3 mol/s
+Delta_n_key = np.array([-0.8, -0.4, 0.3])
 
-atom_balance_check = atom_matrix @ N_stoich
+# Solve reaction extent
+xi_independent = np.linalg.solve(N11, Delta_n_key)
 
-print("\nAtom balance check:")
-print(atom_balance_check)
+print("\nIndependent reaction extents in mol/s:")
 
-if np.allclose(atom_balance_check, 0):
-    print("Atom balance is satisfied for all reactions.")
-else:
-    print("Atom balance error detected.")
+for reaction, extent in zip(reactions[key_reaction_idx], xi_independent):
+    print(f"{reaction}: {extent:.4f} mol/s")
 
-import numpy as np
-from numpy.linalg import matrix_rank
+# Calculate change in all components
+Delta_n_all = N_independent @ xi_independent
 
-# ---------------------------------------------------------
-# 1. Define components and reactions
-# ---------------------------------------------------------
+# Calculate outlet molar flow rates
+n_out = n_in + Delta_n_all
 
-components = np.array(["CO2", "H2", "CH3OH", "H2O", "CO", "DME"])
+print("\nChanges in molar flow rates in mol/s:")
 
-reactions = np.array([
-    "R1: CO2 + 3H2 -> CH3OH + H2O",
-    "R2: CO + 2H2 -> CH3OH",
-    "R3: CO2 + H2 -> CO + H2O",
-    "R4: 2CH3OH -> DME + H2O"
-])
+for component, change in zip(components, Delta_n_all):
+    print(f"{component}: {change:.4f}")
 
-# ---------------------------------------------------------
-# 2. Stoichiometric matrix
-# Rows = components
-# Columns = reactions
-# ---------------------------------------------------------
+print("\nOutlet molar flow rates in mol/s:")
 
-N_stoich = np.array([
-    [-1,  0, -1,  0],   # CO2
-    [-3, -2, -1,  0],   # H2
-    [ 1,  1,  0, -2],   # CH3OH
-    [ 1,  0,  1,  1],   # H2O
-    [ 0, -1,  1,  0],   # CO
-    [ 0,  0,  0,  1]    # DME
-], dtype=float)
+for component, flow in zip(components, n_out):
+    print(f"{component}: {flow:.4f}")
 
-print("Stoichiometric matrix N:")
-print(N_stoich)
+# DME carbon yield based on total carbon feed from CO2 and CO
+carbon_feed = n_in[0] + n_in[4]
 
-# ---------------------------------------------------------
-# 3. Rank of the stoichiometric matrix
-# ---------------------------------------------------------
+Y_DME_carbon = (2 * n_out[5]) / carbon_feed
 
-rank_N = matrix_rank(N_stoich)
-
-print("\nRank of full stoichiometric matrix:", rank_N)
-
-# ---------------------------------------------------------
-# 4. Check dependency of R3
-# R3 should be equal to R1 - R2
-# ---------------------------------------------------------
-
-print("\nCheck stoichiometric dependency:")
-print("R3 column:")
-print(N_stoich[:, 2])
-
-print("\nR1 - R2 column:")
-print(N_stoich[:, 0] - N_stoich[:, 1])
-
-print("\nIs R3 = R1 - R2?")
-print(np.allclose(N_stoich[:, 2], N_stoich[:, 0] - N_stoich[:, 1]))
-
-# ---------------------------------------------------------
-# 5. Choose key reactions and key components
-# Key reactions: R1, R2, R4
-# Key components: CO2, CO, DME
-# ---------------------------------------------------------
-
-key_reaction_idx = [0, 1, 3]     # R1, R2, R4
-key_component_idx = [0, 4, 5]    # CO2, CO, DME
-
-N11 = N_stoich[np.ix_(key_component_idx, key_reaction_idx)]
-
-print("\nChosen key reactions:")
-print(reactions[key_reaction_idx])
-
-print("\nChosen key components:")
-print(components[key_component_idx])
-
-print("\nReduced key matrix N11:")
-print(N11)
-
-print("\nRank of N11:", matrix_rank(N11))
-
-if matrix_rank(N11) == rank_N:
-    print("\nThe chosen key components and key reactions are valid.")
-else:
-    print("\nThe chosen set is not valid. Another set must be selected.")
+print("\nDME carbon yield:")
+print(f"{Y_DME_carbon:.4f}")
 
 # ---------------------------------------------------------
 # 6. Verification using atom balance
