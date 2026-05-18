@@ -7,39 +7,39 @@ import matplotlib.pyplot as plt
 import ICIW_Plots.colors as iciw_colors
 from CoolProp.CoolProp import PropsSI
 
-#%%
-# Load thermodynamic data
-
-# define function with arguments temperature and name of component
-def prop_thermo(T, comp):
-    results = np.empty(3) # generate empty vector of required size
-    t=T/1000 # define the dimensionless temperature required
-    # define the Shomate equations
-    fun_cp_NIST = np.array([t**0, t, t**2, t**3, t**-2, 0, 0, 0])
-    fun_H_NIST = np.array([t, t**2/2, t**3/3, t**4/4, -t**-1, 1, 0, -1])
-    fun_S_NIST = np.array([np.log(t), t, t**2/2, t**3/3, -t**-2/2, 0, 1, 0])
-    # assign parameters of the Shomate equation to components
-    if comp == 0 or comp == 'CO2': #
-        PhysProp_param_NIST = np.array([24.997, 55.187, -33.691, 7.948, -0.137, -403.608, 228.243, -393.522])
-    elif comp == 1 or comp == 'H2': #
-        PhysProp_param_NIST = np.array([33.07, -11.36, 11.43, -2.773, -0.1586, -9.981, 172.7, 0])
-    elif comp == 2 or comp == 'CH3OH': # No NIST data aviable, CoolProp data is used for comparison Max Temperature is 620K
-        PhysProp_param_NIST = np.array([])
-    elif comp == 3 or comp == 'H2O': #
-        PhysProp_param_NIST = np.array([30.092, 6.832, 6.793, -2.534, 0.082, -250.881, 223.397, -241.826])
-    elif comp == 4 or comp == 'CO': #
-        PhysProp_param_NIST = np.array([25.567, 6.096, 4.054, -2.671, 0.131, -483.607, 263.612, -110.527])
-    elif comp == 5 or comp == 'CH3OCH3': # No NIST data aviable, CoolProp data is used for comparison Max Temperature is 585K
-        PhysProp_param_NIST = np.array([])
-    else:
-        PhysProp_param_NIST = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-    # multiply set of parameters to Shomate equation
-    results[0] = fun_cp_NIST.dot(PhysProp_param_NIST) # heat capacity
-    results[1] = (PhysProp_param_NIST[-1] + fun_H_NIST.dot(PhysProp_param_NIST))*1000 # enthalpy of formation
-    results[2] = fun_S_NIST.dot(PhysProp_param_NIST) # entropy
-    return results
-# call of the function for T = 25°C and CO2
-print('vector of heat capacity, enthalpy and entropy for carbon dioxide:',prop_thermo(25+273, 'CO2')) # display of key result for check
+# #%%
+# # Load thermodynamic data
+# 
+# # define function with arguments temperature and name of component
+# def prop_thermo(T, comp):
+#     results = np.empty(3) # generate empty vector of required size
+#     t=T/1000 # define the dimensionless temperature required
+#     # define the Shomate equations
+#     fun_cp_NIST = np.array([t**0, t, t**2, t**3, t**-2, 0, 0, 0])
+#     fun_H_NIST = np.array([t, t**2/2, t**3/3, t**4/4, -t**-1, 1, 0, -1])
+#     fun_S_NIST = np.array([np.log(t), t, t**2/2, t**3/3, -t**-2/2, 0, 1, 0])
+#     # assign parameters of the Shomate equation to components
+#     if comp == 0 or comp == 'CO2': #
+#         PhysProp_param_NIST = np.array([24.997, 55.187, -33.691, 7.948, -0.137, -403.608, 228.243, -393.522])
+#     elif comp == 1 or comp == 'H2': #
+#         PhysProp_param_NIST = np.array([33.07, -11.36, 11.43, -2.773, -0.1586, -9.981, 172.7, 0])
+#     elif comp == 2 or comp == 'CH3OH': # No NIST data aviable, CoolProp data is used for comparison Max Temperature is 620K
+#         PhysProp_param_NIST = np.array([])
+#     elif comp == 3 or comp == 'H2O': #
+#         PhysProp_param_NIST = np.array([30.092, 6.832, 6.793, -2.534, 0.082, -250.881, 223.397, -241.826])
+#     elif comp == 4 or comp == 'CO': #
+#         PhysProp_param_NIST = np.array([25.567, 6.096, 4.054, -2.671, 0.131, -483.607, 263.612, -110.527])
+#     elif comp == 5 or comp == 'CH3OCH3': # No NIST data aviable, CoolProp data is used for comparison Max Temperature is 585K
+#         PhysProp_param_NIST = np.array([])
+#     else:
+#         PhysProp_param_NIST = np.array([0, 0, 0, 0, 0, 0, 0, 0])
+#     # multiply set of parameters to Shomate equation
+#     results[0] = fun_cp_NIST.dot(PhysProp_param_NIST) # heat capacity
+#     results[1] = (PhysProp_param_NIST[-1] + fun_H_NIST.dot(PhysProp_param_NIST))*1000 # enthalpy of formation
+#     results[2] = fun_S_NIST.dot(PhysProp_param_NIST) # entropy
+#     return results
+# # call of the function for T = 25°C and CO2
+# print('vector of heat capacity, enthalpy and entropy for carbon dioxide:',prop_thermo(25+273, 'CO2')) # display of key result for check
 
 #%%
 
@@ -121,3 +121,117 @@ print('MeOH @ 298 K :', prop_thermo(298.15, 'CH3OH'))   # H ≈ -200700, S ≈ 2
 print('DME  @ 298 K :', prop_thermo(298.15, 'CH3OCH3'))  # H ≈ -184100, S ≈ 267.8
 print('MeOH @ 500 K :', prop_thermo(500,    'CH3OH'))
 print('DME  @ 500 K :', prop_thermo(500,    'CH3OCH3'))
+
+#%%
+
+# define function with argument temperature
+def rxn_data_1(T):
+    res = np.empty(5) # generate empty vector of required size
+    # call the function on thermodynamic properties for all components
+    data_CO2 = prop_thermo(T, 'CO2')
+    data_H2 = prop_thermo(T, 'H2')
+    data_CH3OH = prop_thermo(T, 'CH3OH')
+    data_H2O = prop_thermo(T, 'H2O')
+    # use stoichiometry to calculate the thermodynamic properties of the reaction
+    res[0] = data_CH3OH[0] + data_H2O[0] - 3*data_H2[0] - data_CO2[0] # reaction heat capacity
+    res[1] = data_CH3OH[1] + data_H2O[1] - 3*data_H2[1] - data_CO2[1] # reaction enthalpy
+    res[2] = data_CH3OH[2] + data_H2O[2] - 3*data_H2[2] - data_CO2[2] # reaction entropy
+    res[3] = res[1] - T*res[2] # reaction Gibbs enthalpy
+    res[4] = np.exp(-res[3]/(8.3145*T)) # reaction equilibrium constant
+    return res
+# call the function for T = 25°C to compare with tabulated data
+print('vector with heat capacity, enthalpy, entropie and Gibbs enthalpy of the reaction, and thermodynamic equilibrium constant:',rxn_data_1(25+273)) # display of key result for check
+
+# define function with argument temperature
+def rxn_data_2(T):
+    res = np.empty(5) # generate empty vector of required size
+    # call the function on thermodynamic properties for all components
+    data_CO = prop_thermo(T, 'CO')
+    data_H2 = prop_thermo(T, 'H2')
+    data_CH3OH = prop_thermo(T, 'CH3OH')
+    # use stoichiometry to calculate the thermodynamic properties of the reaction
+    res[0] = data_CH3OH[0] - 2*data_H2[0] - data_CO[0] # reaction heat capacity
+    res[1] = data_CH3OH[1] - 2*data_H2[1] - data_CO[1] # reaction enthalpy
+    res[2] = data_CH3OH[2] - 2*data_H2[2] - data_CO[2] # reaction entropy
+    res[3] = res[1] - T*res[2] # reaction Gibbs enthalpy
+    res[4] = np.exp(-res[3]/(8.3145*T)) # reaction equilibrium constant
+    return res
+# call the function for T = 25°C to compare with tabulated data
+print('vector with heat capacity, enthalpy, entropie and Gibbs enthalpy of the reaction, and thermodynamic equilibrium constant:',rxn_data_2(25+273)) # display of key result for check
+
+# define function with argument temperature
+def rxn_data_3(T):
+    res = np.empty(5) # generate empty vector of required size
+    # call the function on thermodynamic properties for all components
+    data_CH3OH = prop_thermo(T, 'CH3OH')
+    data_H2O = prop_thermo(T, 'H2O')
+    data_CH3OCH3 = prop_thermo(T, 'CH3OCH3')
+    # use stoichiometry to calculate the thermodynamic properties of the reaction
+    res[0] = data_CH3OCH3[0] + data_H2O[0] - 2* data_CH3OH[0]  # reaction heat capacity
+    res[1] = data_CH3OCH3[1] + data_H2O[1] - 2* data_CH3OH[1]  # reaction enthalpy
+    res[2] = data_CH3OCH3[2] + data_H2O[2] - 2* data_CH3OH[2]  # reaction entropy
+    res[3] = res[1] - T*res[2] # reaction Gibbs enthalpy
+    res[4] = np.exp(-res[3]/(8.3145*T)) # reaction equilibrium constant
+    return res
+# call the function for T = 25°C to compare with tabulated data
+print('vector with heat capacity, enthalpy, entropie and Gibbs enthalpy of the reaction, and thermodynamic equilibrium constant:',rxn_data_3(25+273)) # display of key result for check
+
+
+#%%
+# define vectors for typical ranges of T and p
+T = np.linspace(100+273, 200+273, 100) # temperature in K
+p = np.array([1, 2, 3]) # total pressure in bar
+
+K_x_1 = np.empty([p.shape[0],T.shape[0]]) # generate empty vector of required size
+for TT in range(T.shape[0]): # vary the temperature within the given range
+    # at each single temperature
+    rxn_data_get = rxn_data_1(T[TT]) # call the function for thermodynamic data of the reaction 
+    K_eq = rxn_data_get[-1] # the last element in the results vector provides the thermodynamic equilibrium constant
+    K_x_1[:,TT] = K_eq*np.power(p,2) # calculate K_x at each temperature for all pressures
+
+# generate the plot
+plt.figure(figsize=(5, 5))
+plt.grid()
+plt.xlabel(r"$T\,/\,°C$")
+plt.ylabel("$K_x\,/\,1$")
+plt.plot(T[:]-273, K_x_1[0,:], 'r-', label="$10$ bar")
+plt.plot(T[:]-273, K_x_1[1,:], 'g-', label="$20$ bar")
+plt.plot(T[:]-273, K_x_1[2,:], 'b-', label="$30$ bar")
+plt.legend(loc='best')
+plt.show()
+
+K_x_2 = np.empty([p.shape[0],T.shape[0]]) # generate empty vector of required size
+for TT in range(T.shape[0]): # vary the temperature within the given range
+    # at each single temperature
+    rxn_data_get = rxn_data_2(T[TT]) # call the function for thermodynamic data of the reaction 
+    K_eq = rxn_data_get[-1] # the last element in the results vector provides the thermodynamic equilibrium constant
+    K_x_2[:,TT] = K_eq*np.power(p,2) # calculate K_x at each temperature for all pressures
+
+# generate the plot
+plt.figure(figsize=(5, 5))
+plt.grid()
+plt.xlabel(r"$T\,/\,°C$")
+plt.ylabel("$K_x\,/\,1$")
+plt.plot(T[:]-273, K_x_2[0,:], 'r-', label="$10$ bar")
+plt.plot(T[:]-273, K_x_2[1,:], 'g-', label="$20$ bar")
+plt.plot(T[:]-273, K_x_2[2,:], 'b-', label="$30$ bar")
+plt.legend(loc='best')
+plt.show()
+
+K_x_3 = np.empty([p.shape[0],T.shape[0]]) # generate empty vector of required size
+for TT in range(T.shape[0]): # vary the temperature within the given range
+    # at each single temperature
+    rxn_data_get = rxn_data_3(T[TT]) # call the function for thermodynamic data of the reaction 
+    K_eq = rxn_data_get[-1] # the last element in the results vector provides the thermodynamic equilibrium constant
+    K_x_3[:,TT] = K_eq*np.power(p,2) # calculate K_x at each temperature for all pressures
+
+# generate the plot
+plt.figure(figsize=(5, 5))
+plt.grid()
+plt.xlabel(r"$T\,/\,°C$")
+plt.ylabel("$K_x\,/\,1$")
+plt.plot(T[:]-273, K_x_3[0,:], 'r-', label="$10$ bar")
+plt.plot(T[:]-273, K_x_3[1,:], 'g-', label="$20$ bar")
+plt.plot(T[:]-273, K_x_3[2,:], 'b-', label="$30$ bar")
+plt.legend(loc='best')
+plt.show()
