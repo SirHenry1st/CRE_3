@@ -6,7 +6,217 @@ import os
 import matplotlib.pyplot as plt
 import ICIW_Plots.colors as iciw_colors
 from CoolProp.CoolProp import PropsSI
+import numpy as np
+from numpy.linalg import matrix_rank
 
+# ---------------------------------------------------------
+# 1. Define components and reactions
+# ---------------------------------------------------------
+
+components = np.array(["CO2", "H2", "CH3OH", "H2O", "CO", "DME"])
+
+reactions = np.array([
+    "R1: CO2 + 3H2 -> CH3OH + H2O",
+    "R2: CO + 2H2 -> CH3OH",
+    "R3: CO2 + H2 -> CO + H2O",
+    "R4: 2CH3OH -> DME + H2O"
+])
+
+# ---------------------------------------------------------
+# 2. Stoichiometric matrix
+# Rows = components
+# Columns = reactions
+# ---------------------------------------------------------
+
+N_stoich = np.array([
+    [-1,  0, -1,  0],   # CO2
+    [-3, -2, -1,  0],   # H2
+    [ 1,  1,  0, -2],   # CH3OH
+    [ 1,  0,  1,  1],   # H2O
+    [ 0, -1,  1,  0],   # CO
+    [ 0,  0,  0,  1]    # DME
+], dtype=float)
+
+print("Stoichiometric matrix N:")
+print(N_stoich)
+
+# ---------------------------------------------------------
+# 3. Rank of the stoichiometric matrix
+# ---------------------------------------------------------
+
+rank_N = matrix_rank(N_stoich)
+
+print("\nRank of full stoichiometric matrix:", rank_N)
+
+# ---------------------------------------------------------
+# 4. Check dependency of R3
+# R3 should be equal to R1 - R2
+# ---------------------------------------------------------
+
+print("\nCheck stoichiometric dependency:")
+print("R3 column:")
+print(N_stoich[:, 2])
+
+print("\nR1 - R2 column:")
+print(N_stoich[:, 0] - N_stoich[:, 1])
+
+print("\nIs R3 = R1 - R2?")
+print(np.allclose(N_stoich[:, 2], N_stoich[:, 0] - N_stoich[:, 1]))
+
+# ---------------------------------------------------------
+# 5. Choose key reactions and key components
+# Key reactions: R1, R2, R4
+# Key components: CO2, CO, DME
+# ---------------------------------------------------------
+
+key_reaction_idx = [0, 1, 3]     # R1, R2, R4
+key_component_idx = [0, 4, 5]    # CO2, CO, DME
+
+N11 = N_stoich[np.ix_(key_component_idx, key_reaction_idx)]
+
+print("\nChosen key reactions:")
+print(reactions[key_reaction_idx])
+
+print("\nChosen key components:")
+print(components[key_component_idx])
+
+print("\nReduced key matrix N11:")
+print(N11)
+
+print("\nRank of N11:", matrix_rank(N11))
+
+if matrix_rank(N11) == rank_N:
+    print("\nThe chosen key components and key reactions are valid.")
+else:
+    print("\nThe chosen set is not valid. Another set must be selected.")
+
+# ---------------------------------------------------------
+# 6. Verification using atom balance
+# Atom matrix order: C, H, O
+# Component order: CO2, H2, CH3OH, H2O, CO, DME
+# ---------------------------------------------------------
+
+atom_matrix = np.array([
+    [1, 0, 1, 0, 1, 2],   # Carbon atoms
+    [0, 2, 4, 2, 0, 6],   # Hydrogen atoms
+    [2, 0, 1, 1, 1, 1]    # Oxygen atoms
+], dtype=float)
+
+atom_balance_check = atom_matrix @ N_stoich
+
+print("\nAtom balance check:")
+print(atom_balance_check)
+
+if np.allclose(atom_balance_check, 0):
+    print("Atom balance is satisfied for all reactions.")
+else:
+    print("Atom balance error detected.")
+
+import numpy as np
+from numpy.linalg import matrix_rank
+
+# ---------------------------------------------------------
+# 1. Define components and reactions
+# ---------------------------------------------------------
+
+components = np.array(["CO2", "H2", "CH3OH", "H2O", "CO", "DME"])
+
+reactions = np.array([
+    "R1: CO2 + 3H2 -> CH3OH + H2O",
+    "R2: CO + 2H2 -> CH3OH",
+    "R3: CO2 + H2 -> CO + H2O",
+    "R4: 2CH3OH -> DME + H2O"
+])
+
+# ---------------------------------------------------------
+# 2. Stoichiometric matrix
+# Rows = components
+# Columns = reactions
+# ---------------------------------------------------------
+
+N_stoich = np.array([
+    [-1,  0, -1,  0],   # CO2
+    [-3, -2, -1,  0],   # H2
+    [ 1,  1,  0, -2],   # CH3OH
+    [ 1,  0,  1,  1],   # H2O
+    [ 0, -1,  1,  0],   # CO
+    [ 0,  0,  0,  1]    # DME
+], dtype=float)
+
+print("Stoichiometric matrix N:")
+print(N_stoich)
+
+# ---------------------------------------------------------
+# 3. Rank of the stoichiometric matrix
+# ---------------------------------------------------------
+
+rank_N = matrix_rank(N_stoich)
+
+print("\nRank of full stoichiometric matrix:", rank_N)
+
+# ---------------------------------------------------------
+# 4. Check dependency of R3
+# R3 should be equal to R1 - R2
+# ---------------------------------------------------------
+
+print("\nCheck stoichiometric dependency:")
+print("R3 column:")
+print(N_stoich[:, 2])
+
+print("\nR1 - R2 column:")
+print(N_stoich[:, 0] - N_stoich[:, 1])
+
+print("\nIs R3 = R1 - R2?")
+print(np.allclose(N_stoich[:, 2], N_stoich[:, 0] - N_stoich[:, 1]))
+
+# ---------------------------------------------------------
+# 5. Choose key reactions and key components
+# Key reactions: R1, R2, R4
+# Key components: CO2, CO, DME
+# ---------------------------------------------------------
+
+key_reaction_idx = [0, 1, 3]     # R1, R2, R4
+key_component_idx = [0, 4, 5]    # CO2, CO, DME
+
+N11 = N_stoich[np.ix_(key_component_idx, key_reaction_idx)]
+
+print("\nChosen key reactions:")
+print(reactions[key_reaction_idx])
+
+print("\nChosen key components:")
+print(components[key_component_idx])
+
+print("\nReduced key matrix N11:")
+print(N11)
+
+print("\nRank of N11:", matrix_rank(N11))
+
+if matrix_rank(N11) == rank_N:
+    print("\nThe chosen key components and key reactions are valid.")
+else:
+    print("\nThe chosen set is not valid. Another set must be selected.")
+
+# ---------------------------------------------------------
+# 6. Verification using atom balance
+# Atom matrix order: C, H, O
+# Component order: CO2, H2, CH3OH, H2O, CO, DME
+# ---------------------------------------------------------
+
+atom_matrix = np.array([
+    [1, 0, 1, 0, 1, 2],   # Carbon atoms
+    [0, 2, 4, 2, 0, 6],   # Hydrogen atoms
+    [2, 0, 1, 1, 1, 1]    # Oxygen atoms
+], dtype=float)
+
+atom_balance_check = atom_matrix @ N_stoich
+
+print("\nAtom balance check:")
+print(atom_balance_check)
+
+if np.allclose(atom_balance_check, 0):
+    print("Atom balance is satisfied for all reactions.")
+else:
+    print("Atom balance error detected.")
 # #%%
 # # Load thermodynamic data
 # 
