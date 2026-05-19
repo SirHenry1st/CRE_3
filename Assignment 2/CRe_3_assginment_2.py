@@ -6,13 +6,12 @@ import os
 import matplotlib.pyplot as plt
 import ICIW_Plots.colors as iciw_colors
 from CoolProp.CoolProp import PropsSI
-import numpy as np
 from numpy.linalg import matrix_rank
 
-# ---------------------------------------------------------
-# 1. Define components and reactions
-# ---------------------------------------------------------
+#%%
+# Stochimetric analysis
 
+# Define components and reactions
 components = np.array(["CO2", "H2", "CH3OH", "H2O", "CO", "DME"])
 
 reactions = np.array([
@@ -21,12 +20,9 @@ reactions = np.array([
     "R3: CO2 + H2 -> CO + H2O",
     "R4: 2CH3OH -> DME + H2O"
 ])
-
-# ---------------------------------------------------------
-# 2. Stoichiometric matrix
+# Stoichiometric matrix
 # Rows = components
 # Columns = reactions
-# ---------------------------------------------------------
 
 N_stoich = np.array([
     [-1,  0, -1,  0],   # CO2
@@ -40,19 +36,11 @@ N_stoich = np.array([
 print("Stoichiometric matrix N:")
 print(N_stoich)
 
-# ---------------------------------------------------------
-# 3. Rank of the stoichiometric matrix
-# ---------------------------------------------------------
-
+# Rank of the stoichiometric matrix
 rank_N = matrix_rank(N_stoich)
-
 print("\nRank of full stoichiometric matrix:", rank_N)
 
-# ---------------------------------------------------------
-# 4. Check dependency of R3
-# R3 should be equal to R1 - R2
-# ---------------------------------------------------------
-
+# Check dependency of R3
 print("\nCheck stoichiometric dependency:")
 print("R3 column:")
 print(N_stoich[:, 2])
@@ -63,11 +51,9 @@ print(N_stoich[:, 0] - N_stoich[:, 1])
 print("\nIs R3 = R1 - R2?")
 print(np.allclose(N_stoich[:, 2], N_stoich[:, 0] - N_stoich[:, 1]))
 
-# ---------------------------------------------------------
-# 5. Choose key reactions and key components
+# Choose key reactions and key components
 # Key reactions: R1, R2, R4
 # Key components: CO2, CO, DME
-# ---------------------------------------------------------
 
 key_reaction_idx = [0, 1, 3]     # R1, R2, R4
 key_component_idx = [0, 4, 5]    # CO2, CO, DME
@@ -90,9 +76,7 @@ if matrix_rank(N11) == rank_N:
 else:
     print("\nThe chosen set is not valid. Another set must be selected.")
 
-# # ---------------------------------------------------------
 # Reaction extent calculation example
-# ---------------------------------------------------------
 
 # Use only independent reactions R1, R2 and R4
 N_independent = N_stoich[:, key_reaction_idx]
@@ -139,11 +123,9 @@ Y_DME_carbon = (2 * n_out[5]) / carbon_feed
 print("\nDME carbon yield:")
 print(f"{Y_DME_carbon:.4f}")
 
-# ---------------------------------------------------------
-# 6. Verification using atom balance
+# Verification using atom balance
 # Atom matrix order: C, H, O
 # Component order: CO2, H2, CH3OH, H2O, CO, DME
-# ---------------------------------------------------------
 
 atom_matrix = np.array([
     [1, 0, 1, 0, 1, 2],   # Carbon atoms
@@ -160,39 +142,7 @@ if np.allclose(atom_balance_check, 0):
     print("Atom balance is satisfied for all reactions.")
 else:
     print("Atom balance error detected.")
-# #%%
-# # Load thermodynamic data
-# 
-# # define function with arguments temperature and name of component
-# def prop_thermo(T, comp):
-#     results = np.empty(3) # generate empty vector of required size
-#     t=T/1000 # define the dimensionless temperature required
-#     # define the Shomate equations
-#     fun_cp_NIST = np.array([t**0, t, t**2, t**3, t**-2, 0, 0, 0])
-#     fun_H_NIST = np.array([t, t**2/2, t**3/3, t**4/4, -t**-1, 1, 0, -1])
-#     fun_S_NIST = np.array([np.log(t), t, t**2/2, t**3/3, -t**-2/2, 0, 1, 0])
-#     # assign parameters of the Shomate equation to components
-#     if comp == 0 or comp == 'CO2': #
-#         PhysProp_param_NIST = np.array([24.997, 55.187, -33.691, 7.948, -0.137, -403.608, 228.243, -393.522])
-#     elif comp == 1 or comp == 'H2': #
-#         PhysProp_param_NIST = np.array([33.07, -11.36, 11.43, -2.773, -0.1586, -9.981, 172.7, 0])
-#     elif comp == 2 or comp == 'CH3OH': # No NIST data aviable, CoolProp data is used for comparison Max Temperature is 620K
-#         PhysProp_param_NIST = np.array([])
-#     elif comp == 3 or comp == 'H2O': #
-#         PhysProp_param_NIST = np.array([30.092, 6.832, 6.793, -2.534, 0.082, -250.881, 223.397, -241.826])
-#     elif comp == 4 or comp == 'CO': #
-#         PhysProp_param_NIST = np.array([25.567, 6.096, 4.054, -2.671, 0.131, -483.607, 263.612, -110.527])
-#     elif comp == 5 or comp == 'CH3OCH3': # No NIST data aviable, CoolProp data is used for comparison Max Temperature is 585K
-#         PhysProp_param_NIST = np.array([])
-#     else:
-#         PhysProp_param_NIST = np.array([0, 0, 0, 0, 0, 0, 0, 0])
-#     # multiply set of parameters to Shomate equation
-#     results[0] = fun_cp_NIST.dot(PhysProp_param_NIST) # heat capacity
-#     results[1] = (PhysProp_param_NIST[-1] + fun_H_NIST.dot(PhysProp_param_NIST))*1000 # enthalpy of formation
-#     results[2] = fun_S_NIST.dot(PhysProp_param_NIST) # entropy
-#     return results
-# # call of the function for T = 25°C and CO2
-# print('vector of heat capacity, enthalpy and entropy for carbon dioxide:',prop_thermo(25+273, 'CO2')) # display of key result for check
+
 
 #%%
 
@@ -312,23 +262,32 @@ def rxn_data_2(T):
 # call the function for T = 25°C to compare with tabulated data
 print('vector with heat capacity, enthalpy, entropie and Gibbs enthalpy of the reaction, and thermodynamic equilibrium constant:',rxn_data_2(25+273)) # display of key result for check
 
-# define function with argument temperature
 def rxn_data_3(T):
-    res = np.empty(5) # generate empty vector of required size
-    # call the function on thermodynamic properties for all components
-    data_CH3OH = prop_thermo(T, 'CH3OH')
-    data_H2O = prop_thermo(T, 'H2O')
-    data_CH3OCH3 = prop_thermo(T, 'CH3OCH3')
-    # use stoichiometry to calculate the thermodynamic properties of the reaction
-    res[0] = data_CH3OCH3[0] + data_H2O[0] - 2* data_CH3OH[0]  # reaction heat capacity
-    res[1] = data_CH3OCH3[1] + data_H2O[1] - 2* data_CH3OH[1]  # reaction enthalpy
-    res[2] = data_CH3OCH3[2] + data_H2O[2] - 2* data_CH3OH[2]  # reaction entropy
-    res[3] = res[1] - T*res[2] # reaction Gibbs enthalpy
-    res[4] = np.exp(-res[3]/(8.3145*T)) # reaction equilibrium constant
+    """R3: CO2 + H2 <-> CO + H2O  (reverse water-gas shift)"""
+    res = np.empty(5)
+    data_CO2   = prop_thermo(T, 'CO2')
+    data_H2    = prop_thermo(T, 'H2')
+    data_CO    = prop_thermo(T, 'CO')
+    data_H2O   = prop_thermo(T, 'H2O')
+    res[0] = data_CO[0]  + data_H2O[0] - data_H2[0]  - data_CO2[0]
+    res[1] = data_CO[1]  + data_H2O[1] - data_H2[1]  - data_CO2[1]
+    res[2] = data_CO[2]  + data_H2O[2] - data_H2[2]  - data_CO2[2]
+    res[3] = res[1] - T * res[2]
+    res[4] = np.exp(-res[3] / (8.3145 * T))
     return res
-# call the function for T = 25°C to compare with tabulated data
-print('vector with heat capacity, enthalpy, entropie and Gibbs enthalpy of the reaction, and thermodynamic equilibrium constant:',rxn_data_3(25+273)) # display of key result for check
 
+def rxn_data_4(T):
+    """R4: 2CH3OH <-> DME + H2O"""
+    res = np.empty(5)
+    data_CH3OH   = prop_thermo(T, 'CH3OH')
+    data_H2O     = prop_thermo(T, 'H2O')
+    data_DME     = prop_thermo(T, 'CH3OCH3')
+    res[0] = data_DME[0]  + data_H2O[0] - 2*data_CH3OH[0]
+    res[1] = data_DME[1]  + data_H2O[1] - 2*data_CH3OH[1]
+    res[2] = data_DME[2]  + data_H2O[2] - 2*data_CH3OH[2]
+    res[3] = res[1] - T * res[2]
+    res[4] = np.exp(-res[3] / (8.3145 * T))
+    return res
 
 #%%
 # define vectors for typical ranges of T and p
@@ -358,7 +317,7 @@ for TT in range(T.shape[0]): # vary the temperature within the given range
     # at each single temperature
     rxn_data_get = rxn_data_2(T[TT]) # call the function for thermodynamic data of the reaction 
     K_eq = rxn_data_get[-1] # the last element in the results vector provides the thermodynamic equilibrium constant
-    K_x_2[:,TT] = K_eq*np.power(p,2) # calculate K_x at each temperature for all pressures
+    K_x_2[:,TT] = K_eq*np.power(p,1.5) # calculate K_x at each temperature for all pressures
 
 # generate the plot
 plt.figure(figsize=(5, 5))
@@ -376,7 +335,7 @@ for TT in range(T.shape[0]): # vary the temperature within the given range
     # at each single temperature
     rxn_data_get = rxn_data_3(T[TT]) # call the function for thermodynamic data of the reaction 
     K_eq = rxn_data_get[-1] # the last element in the results vector provides the thermodynamic equilibrium constant
-    K_x_3[:,TT] = K_eq*np.power(p,2) # calculate K_x at each temperature for all pressures
+    K_x_3[:,TT] = K_eq*np.power(p,1.5) # calculate K_x at each temperature for all pressures
 
 # generate the plot
 plt.figure(figsize=(5, 5))
@@ -387,4 +346,86 @@ plt.plot(T[:]-273, K_x_3[0,:], 'r-', label="$10$ bar")
 plt.plot(T[:]-273, K_x_3[1,:], 'g-', label="$20$ bar")
 plt.plot(T[:]-273, K_x_3[2,:], 'b-', label="$30$ bar")
 plt.legend(loc='best')
+plt.show()
+
+#%%
+
+# Exponents for K_x = K° * (p/p°)^(-sum_nu)
+# sum_nu per reaction: R1=-2, R2=-2, R3=0, R4=0
+# => K_x exponent:     R1=+2, R2=+2, R3=0, R4=0
+
+T = np.linspace(100+273, 200+273, 100)  # K
+p = np.array([10, 20, 30])              # bar  ← fix: your labels said 10/20/30 bar
+p_std = 1                               # bar  (standard pressure p°)
+
+# --- R1: CO2 + 3H2 <-> CH3OH + H2O,  sum_nu = -2 ---
+K_x_1 = np.empty([p.shape[0], T.shape[0]])
+for TT in range(T.shape[0]):
+    K_eq = rxn_data_1(T[TT])[-1]
+    K_x_1[:, TT] = K_eq * (p / p_std)**2   # exponent = -sum_nu = +2
+
+plt.figure(figsize=(5, 5))
+plt.grid()
+plt.title("R1: CO₂ + 3H₂ ⇌ CH₃OH + H₂O")
+plt.xlabel(r"$T\,/\,°C$")
+plt.ylabel(r"$K_x$")
+plt.plot(T - 273, K_x_1[0, :], 'r-', label="10 bar")
+plt.plot(T - 273, K_x_1[1, :], 'g-', label="20 bar")
+plt.plot(T - 273, K_x_1[2, :], 'b-', label="30 bar")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# --- R2: CO + 2H2 <-> CH3OH,  sum_nu = -2 ---
+K_x_2 = np.empty([p.shape[0], T.shape[0]])
+for TT in range(T.shape[0]):
+    K_eq = rxn_data_2(T[TT])[-1]
+    K_x_2[:, TT] = K_eq * (p / p_std)**2   # exponent = -sum_nu = +2
+
+plt.figure(figsize=(5, 5))
+plt.grid()
+plt.title("R2: CO + 2H₂ ⇌ CH₃OH")
+plt.xlabel(r"$T\,/\,°C$")
+plt.ylabel(r"$K_x$")
+plt.plot(T - 273, K_x_2[0, :], 'r-', label="10 bar")
+plt.plot(T - 273, K_x_2[1, :], 'g-', label="20 bar")
+plt.plot(T - 273, K_x_2[2, :], 'b-', label="30 bar")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# --- R3: CO2 + H2 <-> CO + H2O,  sum_nu = 0 → pressure independent ---
+K_x_3 = np.empty([p.shape[0], T.shape[0]])
+for TT in range(T.shape[0]):
+    K_eq = rxn_data_3(T[TT])[-1]           # no rxn_data_3 yet — see note below
+    K_x_3[:, TT] = K_eq * np.ones(p.shape) # (p/p°)^0 = 1
+
+plt.figure(figsize=(5, 5))
+plt.grid()
+plt.title("R3: CO₂ + H₂ ⇌ CO + H₂O  (pressure-independent)")
+plt.xlabel(r"$T\,/\,°C$")
+plt.ylabel(r"$K_x$")
+plt.plot(T - 273, K_x_3[0, :], 'r-', label="10 bar")
+plt.plot(T - 273, K_x_3[1, :], 'g-', label="20 bar")
+plt.plot(T - 273, K_x_3[2, :], 'b-', label="30 bar")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# --- R4: 2CH3OH <-> DME + H2O,  sum_nu = 0 → pressure independent ---
+K_x_4 = np.empty([p.shape[0], T.shape[0]])
+for TT in range(T.shape[0]):
+    K_eq = rxn_data_4(T[TT])[-1]
+    K_x_4[:, TT] = K_eq * np.ones(p.shape) # (p/p°)^0 = 1
+
+plt.figure(figsize=(5, 5))
+plt.grid()
+plt.title("R4: 2CH₃OH ⇌ DME + H₂O  (pressure-independent)")
+plt.xlabel(r"$T\,/\,°C$")
+plt.ylabel(r"$K_x$")
+plt.plot(T - 273, K_x_4[0, :], 'r-', label="10 bar")
+plt.plot(T - 273, K_x_4[1, :], 'g-', label="20 bar")
+plt.plot(T - 273, K_x_4[2, :], 'b-', label="30 bar")
+plt.legend()
+plt.tight_layout()
 plt.show()
