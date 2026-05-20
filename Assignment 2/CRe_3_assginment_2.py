@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import ICIW_Plots.colors as iciw_colors
 from CoolProp.CoolProp import PropsSI
 from numpy.linalg import matrix_rank
+from scipy.optimize import fsolve # import function for root finding
+from scipy.optimize import root ## import of the numerical solver function
+
 
 #%%
 # Stochimetric analysis
@@ -429,3 +432,139 @@ plt.plot(T - 273, K_x_4[2, :], 'b-', label="30 bar")
 plt.legend()
 plt.tight_layout()
 plt.show()
+
+#%%
+# Define temperature and pressure ranges
+T_range = np.linspace(100+273.15, 300+273.15, 50)  # 100-300°C
+p_range = np.array([50, 100, 150])                 # bar
+
+# Initialize storage for reaction extents
+# Shape: [n_reactions, n_pressures, n_temperatures]
+xi_all = np.empty([4, p_range.shape[0], T_range.shape[0]])
+
+# Define inlet conditions
+n_in = np.array([2.0, 6.0, 0.0, 0.0, 0.0, 0.0])  # CO2, H2, CH3OH, H2O, CO, DME
+
+def equilibrium_system(xi, T, p, n_in):
+    """
+    Solve 4-reaction equilibrium system
+    xi: [xi1, xi2, xi3, xi4] reaction extents
+    """
+    xi1, xi2, xi3, xi4 = xi
+    
+    # Stoichiometric matrix (columns = reactions, rows = components)
+    nu = np.array([
+        [-1,  0, -1,  0],   # CO2
+        [-3, -2, -1,  0],   # H2
+        [ 1,  1,  0, -2],   # CH3OH
+        [ 1,  0,  1,  1],   # H2O
+        [ 0, -1,  1,  0],   # CO
+        [ 0,  0,  0,  1]    # DME
+    ], dtype=float)
+    
+    # Outlet molar flows
+    n_out_vec = n_in + nu @ xi
+    n_out_total = np.sum(n_out_vec)
+    
+    # Guard against negative flows
+    if np.any(n_out_vec < 0) or n_out_total <= 0:
+        return [1e6, 1e6, 1e6, 1e6]
+    
+    # Molar fractions
+    x = n_out_vec / n_out_total
+    x_CO2, x_H2, x_MeOH, x_H2O, x_CO, x_DME = x
+    
+    # Get K° from thermodynamics
+    K1 = rxn_data_1(T)[-1]
+    K2 = rxn_data_2(T)[-1]
+    K3 = rxn_data_3(T)[-1]
+    K4 = rxn_data_4(T)[-1]
+    
+    # Convert to K_x (K° * (p/p°)^(-sum_nu))
+    p_std = 1  # bar
+    Kx1 = K1 * (p/p_std)**2    # delta_nu = -2
+    Kx2 = K2 * (p/p_std)**2    # delta_nu = -2
+    Kx3 = K3 * (p/p_std)**0    # delta_nu = 0
+    Kx4 = K4 * (p/p_std)**0    # delta_nu = 0
+    
+    # Law of mass action equations
+    f1 = Kx1 * x_CO2 * x_H2**3 - x_MeOH * x_H2O
+    f2 = Kx2 * x_CO * x_H2**2 - x_MeOH
+    f3 = Kx3 * x_CO2 * x_H2 - x_CO * x_H2O
+    f4 = Kx4 * x_MeOH**2 - x_DME * x_H2O
+    
+    return [f1, f2, f3, f4]
+
+# Solve equilibrium for all T and p combinations
+print("Solving equilibrium...")
+for ip, p in enumerate(p_range):
+    print(f"Pressure {p} bar:")
+    for iT, T in enumerate(T_range):
+        # Initial guess (adjust if convergence issues)
+        xi0 = np.array([0.1, 0.1, 0.01, 0.01])
+        
+        try:
+            xi_sol = fsolve(equilibrium_system, xi0, 
+                          args=(T, p, n_in), 
+                          full_output=False)
+            xi_all[:, ip, iT] = xi_sol
+        except:
+            print(f"  Failed at T={T-273.15:.1f}°C")
+            xi_all[:, ip, iT] = np.nan
+    
+    print(f"  Completed T range")
+
+# Plot reaction extents vs temperature for each reaction
+reaction_names = [
+    "R1: CO₂ + 3H₂ → CH₃OH + H₂O",
+    "R2: CO + 2H₂ → CH₃OH", 
+    "R3: CO₂ + H₂ → CO + H₂O",
+    "R4: 2CH₃OH → DME + H₂O"
+]
+
+colors = ['r-', 'g-', 'b-']
+labels = [f"{p} bar" for p in p_range]
+
+for rxn_idx in range(4):
+    plt.figure(figsize=(6, 5))
+    plt.grid()
+    plt.title(reaction_names[rxn_idx])
+    plt.xlabel(r"$T\,/\,°C$")
+    plt.ylabel(r"$\xi\,/\,\mathrm{mol\,s^{-1}}$")
+    
+    for ip in range(p_range.shape[0]):
+        plt.plot(T_range - 273.15, xi_all[rxn_idx, ip, :], 
+                colors[ip], label=labels[ip])
+    
+    plt.legend(loc='best')
+    plt.tight_layout()
+    plt.show()
+
+# Also plot outlet compositions for one condition as verification
+print("\n--- Example: T=250°C, p=100 bar ---")
+T_ex = 250 + 273.15
+p_ex = 100
+xi0 = np.array([0.1, 0.1, 0.01, 0.01])
+xi_ex = fsolve(equilibrium_system, xi0, args=(T_ex, p_ex, n_in))
+
+nu = np.array([
+    [-1,  0, -1,  0],
+    [-3, -2, -1,  0],
+    [ 1,  1,  0, -2],
+    [ 1,  0,  1,  1],
+    [ 0, -1,  1,  0],
+    [ 0,  0,  0,  1]
+], dtype=float)
+
+n_out_ex = n_in + nu @ xi_ex
+x_out_ex = n_out_ex / n_out_ex.sum()
+
+print("Reaction extents [mol/s]:")
+for i, name in enumerate(reaction_names):
+    print(f"  {name}: {xi_ex[i]:.4f}")
+
+print("\nOutlet composition:")
+comp_names = ["CO2", "H2", "CH3OH", "H2O", "CO", "DME"]
+for i, name in enumerate(comp_names):
+    print(f"  {name}: {n_out_ex[i]:.4f} mol/s  ({x_out_ex[i]*100:.2f} mol%)")
+
