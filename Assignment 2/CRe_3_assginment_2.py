@@ -196,7 +196,7 @@ def prop_thermo(T, comp):
     elif comp == 3 or comp == 'H2O':
         p = np.array([30.092, 6.832, 6.793, -2.534, 0.082, -250.881, 223.397, -241.826])
     elif comp == 4 or comp == 'CO':
-        p = np.array([25.567, 6.096, 4.054, -2.671, 0.131, -483.607, 263.612, -110.527])
+        p = np.array([25.568, 6.096, 4.054, -2.671, 0.131, -118.009, 227.367, -110.527])
     else:
         p = None
 
@@ -222,11 +222,13 @@ def prop_thermo(T, comp):
 
 
 # --- Sanity checks ---
-print('CO2  @ 298 K :', prop_thermo(298.15, 'CO2'))
+print('CO2  @ 298 K :', prop_thermo(298.15, 'CO2')) 
+print('CO  @ 298 K :', prop_thermo(298.15, 'CO'))
 print('MeOH @ 298 K :', prop_thermo(298.15, 'CH3OH'))   # H ≈ -200700, S ≈ 239.9
 print('DME  @ 298 K :', prop_thermo(298.15, 'CH3OCH3'))  # H ≈ -184100, S ≈ 267.8
 print('MeOH @ 500 K :', prop_thermo(500,    'CH3OH'))
 print('DME  @ 500 K :', prop_thermo(500,    'CH3OCH3'))
+print('CO  @ 500 K :', prop_thermo(500,    'CO'))
 
 #%%
 
@@ -278,6 +280,7 @@ def rxn_data_3(T):
     res[3] = res[1] - T * res[2]
     res[4] = np.exp(-res[3] / (8.3145 * T))
     return res
+print('vector with heat capacity, enthalpy, entropie and Gibbs enthalpy of the reaction, and thermodynamic equilibrium constant:',rxn_data_3(25+273)) # display of key result for check
 
 def rxn_data_4(T):
     """R4: 2CH3OH <-> DME + H2O"""
@@ -291,6 +294,8 @@ def rxn_data_4(T):
     res[3] = res[1] - T * res[2]
     res[4] = np.exp(-res[3] / (8.3145 * T))
     return res
+print('vector with heat capacity, enthalpy, entropie and Gibbs enthalpy of the reaction, and thermodynamic equilibrium constant:',rxn_data_4(25+273)) # display of key result for check
+
 
 #%%
 # define vectors for typical ranges of T and p
