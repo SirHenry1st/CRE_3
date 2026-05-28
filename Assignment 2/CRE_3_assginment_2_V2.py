@@ -424,7 +424,34 @@ plt.show()
 # 3D SURFACE PLOTS WITH CONTOUR PROJECTIONS
 
 # Create meshgrid for T and p
-T_grid, p_grid = np.meshgrid(T_calc - 273, p_calc)  # T in °C
+T_calc_grid = np.linspace(100+273, 300+273, 40)
+p_calc_grid = np.linspace(20, 100, 40)
+
+xi_3D = np.empty([len(p_calc_grid), len(T_calc_grid), 3])
+
+for ip, p_val in enumerate(p_calc_grid):
+    print(f"\nPressure: {p_val:.1f} bar")
+    
+    for iT in range(len(T_calc_grid)):  # Low to high T
+        T_val = T_calc_grid[iT]
+        
+        xi_guess = np.array([0.3, -0.05, 0.05]) if iT == 0 else xi_3D[ip, iT-1, :]
+        
+        try:
+            result = root(rxn_ext, xi_guess, args=(n_in, T_val, p_val), method='lm')
+            
+            if result.success:
+                xi_3D[ip, iT, :] = result.x
+            else:
+                result = root(rxn_ext, xi_guess, args=(n_in, T_val, p_val), method='hybr')
+                xi_3D[ip, iT, :] = result.x if result.success else np.nan * np.ones(3)
+        except Exception as e:
+            print(f"  ERROR at T={T_val-273:.0f}°C: {e}")
+            xi_3D[ip, iT, :] = np.nan * np.ones(3)
+
+
+
+T_grid, p_grid = np.meshgrid(T_calc_grid - 273, p_calc_grid)
 
 reaction_labels_3d = [
     "R1: CO₂ + 3H₂ → CH₃OH + H₂O",
@@ -434,13 +461,12 @@ reaction_labels_3d = [
 xi_labels = [r"$\xi_1$", r"$\xi_2$", r"$\xi_4$"]
 
 for rxn_idx in range(3):
-    # Extract reaction extent surface for this reaction
-    Z = xi[:, :, rxn_idx]   # shape: [n_pressures, n_temperatures]
-    
+    Z = xi_3D[:, :, rxn_idx]   # shape: (40, 40) — now matches grid
+
     fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection='3d')
-    
-    # --- 3D surface ---
+
+    # 3D surface
     surf = ax.plot_surface(
         T_grid, p_grid, Z,
         cmap='viridis',
@@ -448,61 +474,21 @@ for rxn_idx in range(3):
         linewidth=0,
         antialiased=True
     )
-    
-    # --- Contour projection onto the T-p plane (z = z_min) ---
-    z_floor = np.nanmin(Z) - 0.05 * (np.nanmax(Z) - np.nanmin(Z))  # Slightly below surface
-    contour = ax.contour(
-        T_grid, p_grid, Z,
-        levels=12,
-        zdir='z',
-        offset=z_floor,
-        cmap='viridis',
-        linewidths=1.5
-    )
-    
-    # --- Contour projection onto the T-xi plane (p = p_max) ---
-    ax.contour(
-        T_grid, p_grid, Z,
-        levels=12,
-        zdir='y',
-        offset=p_calc[-1],
-        cmap='plasma',
-        linewidths=1,
-        alpha=0.5
-    )
-    
-    # --- Contour projection onto the p-xi plane (T = T_max) ---
-    ax.contour(
-        T_grid, p_grid, Z,
-        levels=12,
-        zdir='x',
-        offset=T_calc[-1] - 273,
-        cmap='plasma',
-        linewidths=1,
-        alpha=0.5
-    )
-    
-    # Colorbar
+
+    # Colorbar, labels, title
     fig.colorbar(surf, ax=ax, shrink=0.5, aspect=10, pad=0.1,
                  label=f"{xi_labels[rxn_idx]} / mol s⁻¹")
-    
-    # Labels and title
     ax.set_xlabel(r"$T\,/\,°C$", labelpad=10)
     ax.set_ylabel(r"$p\,/\,\mathrm{bar}$", labelpad=10)
     ax.set_zlabel(f"{xi_labels[rxn_idx]} / mol s⁻¹", labelpad=10)
     ax.set_title(reaction_labels_3d[rxn_idx], fontsize=11, pad=15)
-    
-    # Set axis limits cleanly
     ax.set_xlim(T_calc[0] - 273, T_calc[-1] - 273)
     ax.set_ylim(p_calc[0], p_calc[-1])
     ax.set_zlim(z_floor, np.nanmax(Z))
-    
-    # Viewing angle
     ax.view_init(elev=25, azim=-50)
-    
+
     plt.tight_layout()
     plt.show()
-
 #%%
 # SUMMARY TABLE
 
