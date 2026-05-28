@@ -475,6 +475,8 @@ for rxn_idx in range(3):
         antialiased=True
     )
 
+    z_floor = np.nanmin(Z) - 0.05 * (np.nanmax(Z) - np.nanmin(Z))
+
     # Colorbar, labels, title
     fig.colorbar(surf, ax=ax, shrink=0.5, aspect=10, pad=0.1,
                  label=f"{xi_labels[rxn_idx]} / mol s⁻¹")
