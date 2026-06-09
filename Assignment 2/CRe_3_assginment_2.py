@@ -79,74 +79,6 @@ if matrix_rank(N11) == rank_N:
 else:
     print("\nThe chosen set is not valid. Another set must be selected.")
 
-# Reaction extent calculation example
-
-# Use only independent reactions R1, R2 and R4
-N_independent = N_stoich[:, key_reaction_idx]
-
-# Example inlet molar flow rates in mol/s
-# Component order: CO2, H2, CH3OH, H2O, CO, DME
-n_in = np.array([2.0, 6.0, 0.0, 0.0, 1.0, 0.0])
-
-# Example measured changes of key components
-# CO2 consumed by 0.8 mol/s
-# CO consumed by 0.4 mol/s
-# DME formed by 0.3 mol/s
-Delta_n_key = np.array([-0.8, -0.4, 0.3])
-
-# Solve reaction extent
-xi_independent = np.linalg.solve(N11, Delta_n_key)
-
-print("\nIndependent reaction extents in mol/s:")
-
-for reaction, extent in zip(reactions[key_reaction_idx], xi_independent):
-    print(f"{reaction}: {extent:.4f} mol/s")
-
-# Calculate change in all components
-Delta_n_all = N_independent @ xi_independent
-
-# Calculate outlet molar flow rates
-n_out = n_in + Delta_n_all
-
-print("\nChanges in molar flow rates in mol/s:")
-
-for component, change in zip(components, Delta_n_all):
-    print(f"{component}: {change:.4f}")
-
-print("\nOutlet molar flow rates in mol/s:")
-
-for component, flow in zip(components, n_out):
-    print(f"{component}: {flow:.4f}")
-
-# DME carbon yield based on total carbon feed from CO2 and CO
-carbon_feed = n_in[0] + n_in[4]
-
-Y_DME_carbon = (2 * n_out[5]) / carbon_feed
-
-print("\nDME carbon yield:")
-print(f"{Y_DME_carbon:.4f}")
-
-# Verification using atom balance
-# Atom matrix order: C, H, O
-# Component order: CO2, H2, CH3OH, H2O, CO, DME
-
-atom_matrix = np.array([
-    [1, 0, 1, 0, 1, 2],   # Carbon atoms
-    [0, 2, 4, 2, 0, 6],   # Hydrogen atoms
-    [2, 0, 1, 1, 1, 1]    # Oxygen atoms
-], dtype=float)
-
-atom_balance_check = atom_matrix @ N_stoich
-
-print("\nAtom balance check:")
-print(atom_balance_check)
-
-if np.allclose(atom_balance_check, 0):
-    print("Atom balance is satisfied for all reactions.")
-else:
-    print("Atom balance error detected.")
-
-
 #%%
 
 # Reference values at 298.15 K from NIST Webbook
@@ -296,74 +228,14 @@ def rxn_data_4(T):
     return res
 print('vector with heat capacity, enthalpy, entropie and Gibbs enthalpy of the reaction, and thermodynamic equilibrium constant:',rxn_data_4(25+273)) # display of key result for check
 
-
-#%%
-# define vectors for typical ranges of T and p
-T = np.linspace(100+273, 200+273, 100) # temperature in K
-p = np.array([1, 2, 3]) # total pressure in bar
-
-K_x_1 = np.empty([p.shape[0],T.shape[0]]) # generate empty vector of required size
-for TT in range(T.shape[0]): # vary the temperature within the given range
-    # at each single temperature
-    rxn_data_get = rxn_data_1(T[TT]) # call the function for thermodynamic data of the reaction 
-    K_eq = rxn_data_get[-1] # the last element in the results vector provides the thermodynamic equilibrium constant
-    K_x_1[:,TT] = K_eq*np.power(p,2) # calculate K_x at each temperature for all pressures
-
-# generate the plot
-plt.figure(figsize=(5, 5))
-plt.grid()
-plt.xlabel(r"$T\,/\,°C$")
-plt.ylabel("$K_x\,/\,1$")
-plt.plot(T[:]-273, K_x_1[0,:], 'r-', label="$10$ bar")
-plt.plot(T[:]-273, K_x_1[1,:], 'g-', label="$20$ bar")
-plt.plot(T[:]-273, K_x_1[2,:], 'b-', label="$30$ bar")
-plt.legend(loc='best')
-plt.show()
-
-K_x_2 = np.empty([p.shape[0],T.shape[0]]) # generate empty vector of required size
-for TT in range(T.shape[0]): # vary the temperature within the given range
-    # at each single temperature
-    rxn_data_get = rxn_data_2(T[TT]) # call the function for thermodynamic data of the reaction 
-    K_eq = rxn_data_get[-1] # the last element in the results vector provides the thermodynamic equilibrium constant
-    K_x_2[:,TT] = K_eq*np.power(p,1.5) # calculate K_x at each temperature for all pressures
-
-# generate the plot
-plt.figure(figsize=(5, 5))
-plt.grid()
-plt.xlabel(r"$T\,/\,°C$")
-plt.ylabel("$K_x\,/\,1$")
-plt.plot(T[:]-273, K_x_2[0,:], 'r-', label="$10$ bar")
-plt.plot(T[:]-273, K_x_2[1,:], 'g-', label="$20$ bar")
-plt.plot(T[:]-273, K_x_2[2,:], 'b-', label="$30$ bar")
-plt.legend(loc='best')
-plt.show()
-
-K_x_3 = np.empty([p.shape[0],T.shape[0]]) # generate empty vector of required size
-for TT in range(T.shape[0]): # vary the temperature within the given range
-    # at each single temperature
-    rxn_data_get = rxn_data_3(T[TT]) # call the function for thermodynamic data of the reaction 
-    K_eq = rxn_data_get[-1] # the last element in the results vector provides the thermodynamic equilibrium constant
-    K_x_3[:,TT] = K_eq*np.power(p,1.5) # calculate K_x at each temperature for all pressures
-
-# generate the plot
-plt.figure(figsize=(5, 5))
-plt.grid()
-plt.xlabel(r"$T\,/\,°C$")
-plt.ylabel("$K_x\,/\,1$")
-plt.plot(T[:]-273, K_x_3[0,:], 'r-', label="$10$ bar")
-plt.plot(T[:]-273, K_x_3[1,:], 'g-', label="$20$ bar")
-plt.plot(T[:]-273, K_x_3[2,:], 'b-', label="$30$ bar")
-plt.legend(loc='best')
-plt.show()
-
 #%%
 
 # Exponents for K_x = K° * (p/p°)^(-sum_nu)
 # sum_nu per reaction: R1=-2, R2=-2, R3=0, R4=0
 # => K_x exponent:     R1=+2, R2=+2, R3=0, R4=0
 
-T = np.linspace(100+273, 200+273, 100)  # K
-p = np.array([10, 20, 30])              # bar  ← fix: your labels said 10/20/30 bar
+T = np.linspace(100+273, 300+273, 100)  # K
+p = np.array([10, 20, 30])              # bar  
 p_std = 1                               # bar  (standard pressure p°)
 
 # --- R1: CO2 + 3H2 <-> CH3OH + H2O,  sum_nu = -2 ---
@@ -380,6 +252,7 @@ plt.ylabel(r"$K_x$")
 plt.plot(T - 273, K_x_1[0, :], 'r-', label="10 bar")
 plt.plot(T - 273, K_x_1[1, :], 'g-', label="20 bar")
 plt.plot(T - 273, K_x_1[2, :], 'b-', label="30 bar")
+plt.yscale('log')
 plt.legend()
 plt.tight_layout()
 plt.show()
@@ -398,6 +271,7 @@ plt.ylabel(r"$K_x$")
 plt.plot(T - 273, K_x_2[0, :], 'r-', label="10 bar")
 plt.plot(T - 273, K_x_2[1, :], 'g-', label="20 bar")
 plt.plot(T - 273, K_x_2[2, :], 'b-', label="30 bar")
+plt.yscale('log')
 plt.legend()
 plt.tight_layout()
 plt.show()
@@ -405,7 +279,7 @@ plt.show()
 # --- R3: CO2 + H2 <-> CO + H2O,  sum_nu = 0 → pressure independent ---
 K_x_3 = np.empty([p.shape[0], T.shape[0]])
 for TT in range(T.shape[0]):
-    K_eq = rxn_data_3(T[TT])[-1]           # no rxn_data_3 yet — see note below
+    K_eq = rxn_data_3(T[TT])[-1]           
     K_x_3[:, TT] = K_eq * np.ones(p.shape) # (p/p°)^0 = 1
 
 plt.figure(figsize=(5, 5))
@@ -416,6 +290,7 @@ plt.ylabel(r"$K_x$")
 plt.plot(T - 273, K_x_3[0, :], 'r-', label="10 bar")
 plt.plot(T - 273, K_x_3[1, :], 'g-', label="20 bar")
 plt.plot(T - 273, K_x_3[2, :], 'b-', label="30 bar")
+plt.yscale('log')
 plt.legend()
 plt.tight_layout()
 plt.show()
@@ -434,156 +309,10 @@ plt.ylabel(r"$K_x$")
 plt.plot(T - 273, K_x_4[0, :], 'r-', label="10 bar")
 plt.plot(T - 273, K_x_4[1, :], 'g-', label="20 bar")
 plt.plot(T - 273, K_x_4[2, :], 'b-', label="30 bar")
+plt.yscale('log')
 plt.legend()
 plt.tight_layout()
 plt.show()
 
+
 #%%
-# Define function for calculation of outlet molar fractions with reaction extents
-# and inlet molar flow rates as arguments
-def composition(xi, n_in):
-    """
-    Calculate outlet molar fractions from reaction extents
-    xi = [xi1, xi2, xi4]  - extents of reactions R1, R2, R4
-    n_in = [n_CO2, n_H2, n_CH3OH, n_H2O, n_CO, n_DME]
-    """
-    xi1, xi2, xi4 = xi
-    
-    # Outlet molar flows (material balances)
-    n_CO2   = n_in[0] - xi1
-    n_H2    = n_in[1] - 3*xi1 - 2*xi2
-    n_CH3OH = n_in[2] + xi1 + xi2 - 2*xi4
-    n_H2O   = n_in[3] + xi1 + xi4
-    n_CO    = n_in[4] - xi2
-    n_DME   = n_in[5] + xi4
-    
-    # Total outlet flow (sum_nu: R1=-2, R2=-2, R4=0)
-    n_out = np.sum(n_in) - 2*xi1 - 2*xi2
-    
-    # Molar fractions
-    x = np.array([n_CO2, n_H2, n_CH3OH, n_H2O, n_CO, n_DME]) / n_out
-    
-    return x
-
-
-# Define function for calculation of reaction extents
-# This function describes the non-linear system of equations to be solved
-def rxn_ext(xi, n_in, T, p):
-    """
-    System of equilibrium equations
-    Returns residuals [f1, f2, f4] that should equal zero at equilibrium
-    """
-    # Get outlet composition
-    x = composition(xi, n_in)
-    x_CO2, x_H2, x_CH3OH, x_H2O, x_CO, x_DME = x
-    if np.any(x < 0):
-       return np.array([1e10, 1e10, 1e10])  # Penalize negative compositions to avoid unphysical solutions
-    
-    # Get thermodynamic data for all reactions
-    rxn_data_get_1 = rxn_data_1(T)
-    rxn_data_get_2 = rxn_data_2(T)
-    rxn_data_get_4 = rxn_data_4(T)
-    
-    # Get thermodynamic equilibrium constants K°
-    K1 = rxn_data_get_1[-1]
-    K2 = rxn_data_get_2[-1]
-    K4 = rxn_data_get_4[-1]
-    
-    # Convert to K_x (accounting for pressure dependency)
-    p_std = 1  # bar
-    Kx1 = K1 * np.power(p/p_std, 2)  # delta_nu = -2
-    Kx2 = K2 * np.power(p/p_std, 2)  # delta_nu = -2
-    Kx4 = K4 * np.power(p/p_std, 0)  # delta_nu = 0
-    
-    # Definition of non-linear equations for reaction extents
-    # R1: CO2 + 3H2 <-> CH3OH + H2O
-    res1 = Kx1 * np.power(x_CO2, 1) * np.power(x_H2, 3) - np.power(x_CH3OH, 1) * np.power(x_H2O, 1)
-    
-    # R2: CO + 2H2 <-> CH3OH
-    res2 = Kx2 * np.power(x_CO, 1) * np.power(x_H2, 2) - np.power(x_CH3OH, 1)
-    
-    # R4: 2CH3OH <-> DME + H2O
-    res4 = Kx4 * np.power(x_CH3OH, 2) - np.power(x_DME, 1) * np.power(x_H2O, 1)
-    
-    return [res1, res2, res4]
-
-
-# Set inlet molar flow rates
-n_in = np.array([2.0, 6.0, 0.0, 0.0, 0.0, 0.0])  # CO2, H2, CH3OH, H2O, CO, DME
-
-# Define temperature and pressure ranges
-T = np.linspace(100+273, 300+273, 30)  # K (start at 150°C for better convergence)
-p = np.array([20, 50, 100])  # bar
-
-# Generate empty arrays for storing results
-# Shape: [n_pressures, n_temperatures, n_reactions]
-xi = np.empty([p.shape[0], T.shape[0], 3])
-
-print("Solving equilibrium for reaction network...")
-
-for pp in range(p.shape[0]):  # vary pressure
-    print(f"\nPressure: {p[pp]} bar")
-    
-    for TT in range(T.shape[0]):  # vary temperature
-        # Initial guess for [xi1, xi2, xi4]
-        xi_guess = np.array([0.5, 0.01, 0.1])
-        
-        # Call root finding algorithm
-        # Variant via root (more robust for systems of equations)
-        result = root(rxn_ext, xi_guess, args=(n_in, T[TT], p[pp]), method='hybr')
-        
-        if result.success:
-            xi[pp, TT, :] = result.x
-            
-            if TT % 5 == 0:  # Print progress every 5 steps
-                print(f"  T={T[TT]-273:.0f}°C: ξ=[{result.x[0]:.4f}, {result.x[1]:.4f}, {result.x[2]:.4f}]")
-        else:
-            print(f"  WARNING: Failed at T={T[TT]-273:.0f}°C")
-            xi[pp, TT, :] = np.nan
-
-# Plot results for each reaction
-reaction_labels = ["R1: CO₂ + 3H₂ → CH₃OH + H₂O", 
-                   "R2: CO + 2H₂ → CH₃OH",
-                   "R4: 2CH₃OH → DME + H₂O"]
-
-colors = ['r-', 'g-', 'b-']
-
-for rxn_idx in range(3):
-    plt.figure(figsize=(6, 5))
-    plt.grid()
-    plt.title(reaction_labels[rxn_idx])
-    plt.xlabel(r"$T\,/\,°C$")
-    plt.ylabel(r"$\xi\,/\,\mathrm{mol\,s^{-1}}$")
-    
-    plt.plot(T[:]-273, xi[0, :, rxn_idx], colors[0], label=f"{p[0]:.0f} bar", linewidth=2)
-    plt.plot(T[:]-273, xi[1, :, rxn_idx], colors[1], label=f"{p[1]:.0f} bar", linewidth=2)
-    plt.plot(T[:]-273, xi[2, :, rxn_idx], colors[2], label=f"{p[2]:.0f} bar", linewidth=2)
-    
-    plt.legend(loc='best')
-    plt.tight_layout()
-    plt.show()
-
-# Verification at one operating point
-print("\n=== Verification: T=250°C, p=100 bar ===")
-T_test = 250 + 273
-p_test = 100
-
-result = root(rxn_ext, [0.5, 0.01, 0.1], args=(n_in, T_test, p_test), method='hybr')
-
-if result.success:
-    xi_test = result.x
-    print(f"Converged: {result.success}")
-    print(f"\nReaction extents [mol/s]:")
-    for i, label in enumerate(reaction_labels):
-        print(f"  {label}: ξ = {xi_test[i]:.6f}")
-    
-    # Calculate outlet composition
-    x_test = composition(xi_test, n_in)
-    n_test = x_test * (np.sum(n_in) - 2*xi_test[0] - 2*xi_test[1])
-    
-    print(f"\nOutlet composition:")
-    comp_names = ["CO2", "H2", "CH3OH", "H2O", "CO", "DME"]
-    for i, name in enumerate(comp_names):
-        print(f"  {name}: {n_test[i]:.4f} mol/s ({x_test[i]*100:.2f} mol%)")
-else:
-    print(f"Failed: {result.message}")
