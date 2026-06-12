@@ -38,7 +38,7 @@ def kinetics(T, c_1):
     r = k_1 * c_1                          # reaction rate mol/(m^3 s)
     return r
 
-def PFTR(L, f):
+def PFTR_constant_h(L, f):
     """
     Spatial derivatives for the PFTR material and energy balances.
 
@@ -76,9 +76,8 @@ f_init = np.array([c_10, c_20, T_0])
 # Solve
 Lspan = np.array([0, L_R])
 leval = np.linspace(0, Lspan[1], 2001)
-sol = integ.solve_ivp(PFTR, Lspan, f_init, method='BDF', t_eval=leval)
+sol = integ.solve_ivp(PFTR_constant_h, Lspan, f_init, method='BDF', t_eval=leval)
 
-#%%
 # POSTPROCESSING & PLOTTING
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
@@ -93,3 +92,101 @@ ax2.plot(sol.t, sol.y[2, :], 'r-')
 
 fig.tight_layout()
 plt.show()
+
+#%%
+
+def PFTR(L, f, h, T_in):
+    c_1, c_2, T = f[0], f[1], f[2]
+    r = kinetics(T, c_1)
+    dc_1dL = -r / u
+    dc_2dL =  r / u
+    dTdL = (-H_R * r / C - h * a_wall * (T - T_wall) / C) / u
+    dfdL = np.empty_like(f)
+    dfdL[0] = dc_1dL
+    dfdL[1] = dc_2dL
+    dfdL[2] = dTdL
+    return dfdL
+
+Lspan = np.array([0, L_R])
+leval = np.linspace(0, Lspan[1], 2001)
+
+#%%
+# Sensitivity 1: Cooling Power (h_wall)
+
+h_cases = {
+    'Adiabatic ($h = 0$)':                   0,
+    '$h = 50$ W m$^{-2}$ K$^{-1}$':         50,
+    '$h = 500$ W m$^{-2}$ K$^{-1}$ (base)': 500,
+    '$h = 5000$ W m$^{-2}$ K$^{-1}$':       5000,
+    'Isothermal ($h \\to \\infty$)':         1e6,
+}
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+ax1.set(xlabel='$L$ / m', ylabel='$c_{\\mathrm{EO}}$ / mol L$^{-1}$')
+ax2.set(xlabel='$L$ / m', ylabel='$T$ / K')
+colors = ['tab:red', 'tab:orange', 'tab:blue', 'tab:cyan', 'tab:green']
+
+for (label, h), color in zip(h_cases.items(), colors):
+    f_init = np.array([c_10, c_20, T_0])
+    sol = integ.solve_ivp(PFTR, Lspan, f_init, args=(h, T_0), method='BDF', t_eval=leval)
+    ax1.plot(sol.t, sol.y[0, :] / 1000, color=color, label=label)
+    ax2.plot(sol.t, sol.y[2, :],         color=color, label=label)
+
+ax1.legend(fontsize=8)
+ax2.legend(fontsize=8)
+fig.tight_layout()
+plt.show()
+
+#%%
+# Sensitivity 2: Inlet Concentration (base: h=500, T_0=423 K)
+
+c_cases = {
+    '$c_{\\mathrm{EO,0}} = 1$ mol L$^{-1}$':  1000,
+    '$c_{\\mathrm{EO,0}} = 2$ mol L$^{-1}$':  2000,
+    '$c_{\\mathrm{EO,0}} = 5$ mol L$^{-1}$':  5000,
+    '$c_{\\mathrm{EO,0}} = 10$ mol L$^{-1}$': 10000,
+}
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+ax1.set(xlabel='$L$ / m', ylabel='$c_{\\mathrm{EO}}$ / mol L$^{-1}$')
+ax2.set(xlabel='$L$ / m', ylabel='$T$ / K')
+colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red']
+
+for (label, c_in), color in zip(c_cases.items(), colors):
+    f_init = np.array([c_in, c_20, T_0])
+    sol = integ.solve_ivp(PFTR, Lspan, f_init, args=(h_wall, T_0), method='BDF', t_eval=leval)
+    ax1.plot(sol.t, sol.y[0, :] / 1000, color=color, label=label)
+    ax2.plot(sol.t, sol.y[2, :],         color=color, label=label)
+
+ax1.legend(fontsize=8)
+ax2.legend(fontsize=8)
+fig.tight_layout()
+plt.show()
+
+#%%
+# Sensitivity 3: Inlet Temperature (base: h=500, c_10=2270 mol/m^3)
+# 150°C = 423 K, 200°C = 473 K, 250°C = 523 K
+
+T_cases = {
+    '$T_0 = 150$ °C (423 K)': 423,
+    '$T_0 = 200$ °C (473 K)': 473,
+    '$T_0 = 250$ °C (523 K)': 523,
+}
+
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
+ax1.set(xlabel='$L$ / m', ylabel='$c_{\\mathrm{EO}}$ / mol L$^{-1}$')
+ax2.set(xlabel='$L$ / m', ylabel='$T$ / K')
+colors = ['tab:blue', 'tab:orange', 'tab:red']
+
+for (label, T_in), color in zip(T_cases.items(), colors):
+    f_init = np.array([c_10, c_20, T_in])
+    sol = integ.solve_ivp(PFTR, Lspan, f_init, args=(h_wall, T_in), method='BDF', t_eval=leval)
+    ax1.plot(sol.t, sol.y[0, :] / 1000, color=color, label=label)
+    ax2.plot(sol.t, sol.y[2, :],         color=color, label=label)
+
+ax1.legend(fontsize=8)
+ax2.legend(fontsize=8)
+fig.tight_layout()
+plt.show()
+
+#%%
