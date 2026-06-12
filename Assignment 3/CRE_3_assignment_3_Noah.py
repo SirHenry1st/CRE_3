@@ -83,6 +83,9 @@ def rho_mix(T, rho_EG_params, rho_WA_params, rho_EO_params, x_arr):
 
     return 1 / (w_EG / rho_EG(T, rho_EG_params) + w_WA / rho_WA(T, rho_WA_params) + w_EO / rho_EO(T, rho_EO_params))
 
+def x_i(c_arr, c_i):
+    return c_i / np.sum(c_arr)
+
 fig, ax = plt.subplots(nrows=2, ncols=2, figsize=(30, 12))
 T_range = np.arange(293, 450, 1) 
 ax[0, 0].plot(T_range, c_p_EG(T_range, c_p_EG_params), label='Ethylene Glycol')
@@ -100,8 +103,23 @@ ax[0, 1].set_xlabel('Temperature (K)')
 ax[0, 1].set_ylabel('Density (kg/m^3)')
 ax[0, 1].set_title('Density vs. Temperature')
 ax[0, 1].legend()
-plt.show()
 
+ax[1, 0].plot(T_range, c_p_mix(T_range, c_p_EG_params, c_p_WA_params, np.array([0.5, 0.5, 0])), label='50% EG, 50% WA')
+ax[1, 0].plot(T_range, c_p_mix(T_range, c_p_EG_params, c_p_WA_params, np.array([0.5, 0, 0.5])), label='25% EG, 75% WA')
+ax[1, 0].plot(T_range, c_p_mix(T_range, c_p_EG_params, c_p_WA_params, np.array([0, 0.5, 0.5])), label='75% EG, 25% WA')
+ax[1, 0].set_xlabel('Temperature (K)')
+ax[1, 0].set_ylabel('Specific Heat Capacity (J/kg-K)')
+ax[1, 0].set_title('Specific Heat Capacity of Mixture vs. Temperature')
+ax[1, 0].legend() 
+
+ax[1, 1].plot(T_range, rho_mix(T_range, rho_EG_params, rho_WA_params, rho_EO_params, np.array([0.5, 0.5, 0])), label='50% EG, 50% WA')
+ax[1, 1].plot(T_range, rho_mix(T_range, rho_EG_params, rho_WA_params, rho_EO_params, np.array([0.5, 0, 0.5])), label='25% EG, 75% WA')
+ax[1, 1].plot(T_range, rho_mix(T_range, rho_EG_params, rho_WA_params, rho_EO_params, np.array([0, 0.5, 0.5])), label='75% EG, 25% WA')
+ax[1, 1].set_xlabel('Temperature (K)')
+ax[1, 1].set_ylabel('Density (kg/m^3)')
+ax[1, 1].set_title('Density of Mixture vs. Temperature')
+ax[1, 1].legend()
+plt.show()
 #%%
 
 # Locations of the injections based on the length of the system and the distance between injections, initial injection not included
