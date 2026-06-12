@@ -4,12 +4,13 @@
 import numpy as np
 import scipy.integrate as integ  # important for initial value problem
 import matplotlib.pyplot as plt  # figures
+plt.style.use("ICIWstyle")
 
 #%%
 # Data Parameters
 
 E_A = 72500      # activation energy J/mol
-k_0 = 5.01       # pre-exponential factor 1/s
+k_0 = 5.01E06       # pre-exponential factor 1/s
 R = 8.314        # gas constant J/(mol K)
 H_R = -92200     # reaction enthalpy J/mol
 
@@ -82,9 +83,9 @@ sol = integ.solve_ivp(PFTR, Lspan, f_init, method='BDF', t_eval=leval)
 
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
 
-ax1.set(xlabel='$L$ / m', ylabel='$c_i$ / mol m$^{-3}$')
-ax1.plot(sol.t, sol.y[0, :], 'b-',  label='$c_{\\mathrm{EO}}$')
-ax1.plot(sol.t, sol.y[1, :], 'b--', label='$c_{\\mathrm{EG}}$')
+ax1.set(xlabel='$L$ / m', ylabel='$c_i$ / mol L$^{-1}$')
+ax1.plot(sol.t, sol.y[0, :] / 1000, 'b-',  label='$c_{\\mathrm{EO}}$')
+ax1.plot(sol.t, sol.y[1, :] / 1000, 'b--', label='$c_{\\mathrm{EG}}$')
 ax1.legend()
 
 ax2.set(xlabel='$L$ / m', ylabel='$T$ / K')
