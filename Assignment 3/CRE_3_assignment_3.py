@@ -32,6 +32,7 @@ T_wall = 423     # wall temperature K (fixed, independent of position)
 # Precalculations
 C = c_p * rho              # volumetric heat capacity J/(m^3 K)
 a_wall = 4 / d_R           # specific wall area m^2_wall/m^3_reactor  (= pi*d / (pi*d^2/4))
+A_ref = np.pi * d_R ** 2 / 4
 
 def kinetics(T, c_1):
     """Arrhenius reaction rate, first order in c_1."""
@@ -448,6 +449,31 @@ def h_by_petukov(T, x, d_R):
     Nu = np.divide(((xi/8) * (Re - 1000) * Pr),(1 + 12.7 * np.power(xi/8, 0.5) * (np.power(Pr, 2/3) - 1))) * (1 + np.power(d_R / L_R, 2/3))
     h = Nu * lambda_mix(T, x) / d_R
     return h
+
+
+
+# Calculated molar flow in mol/s
+def n_dot(u, rho, M):
+    return u * rho * A_ref / (M * 0.001)
+
+# Calculated liquid velocity in m/s
+def u(n_dot, rho, M):
+    return n_dot * M / (rho * A_ref * 1000)
+
+# Molar fraction calculated from concentrations
+def x_i(c_arr, c_i):
+    return c_i / np.sum(c_arr)
+
+# Function for calculation molar flow of water in mol/s  via root finding
+def search_WA_inlet(n_dot_in_WA, n_dot_in_EO, T_0, u_ref):
+    x_WA = n_dot_in_WA / (n_dot_in_WA + n_dot_in_EO)
+    x_EO = n_dot_in_EO / (n_dot_in_WA + n_dot_in_EO)
+
+    x_arr = np.array([x_WA[0], 0, x_EO[0]])
+
+    u_ = u(n_dot_in_WA + n_dot_in_EO, rho_mix(T_0, x_arr), M_mix(x_arr))
+
+    return u_ - u_ref
 
 
 #%%
