@@ -346,7 +346,7 @@ for Bo in bo_values:
     jump_records.append({
         "Bo": Bo,
         "c_A(z=0) / mol m^-3": c_A0_i,
-        "Inlet jump / -": (c_A_in - c_A0_i) / c_A_in
+        "Inlet jump / %": (c_A_in - c_A0_i) / c_A_in * 100
     })
 
 print(pd.DataFrame(jump_records))
