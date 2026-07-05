@@ -318,4 +318,134 @@ validation_summary = pd.DataFrame([{
     "Bo": Bo_high,
     "X_A,out / -": X_A_out_bvp,
 }])
+
+c_A_inlet_bvp = bvp_solution.sol(0)[0]   # c_A at z = 0, inside the reactor
+c_A_jump = c_A_in - c_A_inlet_bvp
+c_A_jump_rel = c_A_jump / c_A_in
+
+print(f"c_A,in (feed)        = {c_A_in:.4f} mol/m^3")
+print(f"c_A(z=0) (in-reactor) = {c_A_inlet_bvp:.4f} mol/m^3")
+print(f"Inlet concentration jump = {c_A_jump:.4f} mol/m^3  ({c_A_jump_rel:.2%})")
 print(f"Relative difference in outlet conversion: {rel_diff:.2%}")
+
+
+#%%
+# Differences in inlet concentration jump for different Bo numbers
+
+bo_values = [1e2, 1e3, 1e4]
+jump_records = []
+
+for Bo in bo_values:
+    D_ax_i = u * L / Bo
+    sol_i = solve_bvp(
+        lambda z, y: dispersion_bvp_rhs(z, y, k, u, D_ax_i),
+        lambda ya, yb: dispersion_bc(ya, yb, c_A_in, c_B_in, u, D_ax_i),
+        z_mesh, y_guess
+    )
+    c_A0_i = sol_i.sol(0)[0]
+    jump_records.append({
+        "Bo": Bo,
+        "c_A(z=0) / mol m^-3": c_A0_i,
+        "Inlet jump / -": (c_A_in - c_A0_i) / c_A_in
+    })
+
+print(pd.DataFrame(jump_records))
+
+#%%
+# CSTR cascade
+
+def cstr_cascade(N, c_A_in, c_B_in, k, tau):
+    """
+    Steady-state CSTR cascade with N equal tanks, first-order kinetics.
+
+    Returns arrays of c_A, c_B at the outlet of each tank (length N+1,
+    including the feed as stage 0).
+    """
+    tau_i = tau / N
+
+    c_A = np.zeros(N + 1)
+    c_B = np.zeros(N + 1)
+    c_A[0] = c_A_in
+    c_B[0] = c_B_in
+
+    for i in range(1, N + 1):
+        c_A[i] = c_A[i-1] / (1 + k * tau_i)
+        c_B[i] = c_B[i-1] + (c_A[i-1] - c_A[i])   # mass balance: whatever A lost, B gained
+
+    return c_A, c_B
+
+
+N = 10
+c_A_cascade, c_B_cascade = cstr_cascade(N, c_A_in, c_B_in, k, tau)
+
+# Position each tank's outlet at its physical location along the reactor
+z_cascade = np.linspace(0, L, N + 1)
+
+# CSTR cascade concentration profile
+plt.figure()
+plt.step(
+    z_cascade,
+    c_A_cascade,
+    where="post",
+    marker="o",
+    label="c_A CSTR cascade"
+)
+plt.step(
+    z_cascade,
+    c_B_cascade,
+    where="post",
+    marker="o",
+    label="c_B CSTR cascade"
+)
+plt.xlabel("Reactor length z / m")
+plt.ylabel("Concentration / mol m^-3")
+plt.title(f"CSTR cascade concentration profile (N = {N})")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# Conversion profile
+X_A_cascade = conversion(c_A_cascade, c_A_in)
+
+plt.figure()
+plt.step(
+    z_cascade,
+    X_A_cascade,
+    where="post",
+    marker="o",
+    label="X_A CSTR cascade"
+)
+plt.xlabel("Reactor length z / m")
+plt.ylabel("Conversion X_A / -")
+plt.title(f"CSTR cascade conversion profile (N = {N})")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# Effect of N: cascade approaching plug-flow behaviour
+plt.figure()
+plt.plot(
+    pfr_df["z / m"],
+    pfr_df["c_A / mol m^-3"],
+    label="c_A ideal PFR (IVP)",
+    color="black",
+    linewidth=2
+)
+
+for N_i in [1, 2, 5, 10, 50]:
+    c_A_i, _ = cstr_cascade(N_i, c_A_in, c_B_in, k, tau)
+    z_i = np.linspace(0, L, N_i + 1)
+    plt.step(
+        z_i,
+        c_A_i,
+        where="post",
+        label=f"N = {N_i}",
+        alpha=0.8
+    )
+
+plt.xlabel("Reactor length z / m")
+plt.ylabel("Concentration of A / mol m^-3")
+plt.title("CSTR cascade approaching ideal PFR as N increases")
+plt.legend()
+plt.tight_layout()
+plt.show()
