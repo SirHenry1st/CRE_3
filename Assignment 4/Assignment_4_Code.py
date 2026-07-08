@@ -355,6 +355,128 @@ for Bo in bo_values:
 print(pd.DataFrame(jump_records))
 
 #%%
+# Lower Bo for the parameter variations, to make dispersion effects clearly visible
+
+Bo_variation = 100
+D_ax = u * L / Bo_variation
+
+print(f"Using Bo = {Bo_variation:.0f} for parameter variations -> D_ax = {D_ax:.3e} m^2/s")
+# Function to solve the dispersion BVP for given parameters
+def solve_dispersion(u_, L_, D_ax_, k_, c_A_in_, c_B_in_, n_mesh=200, n_plot=500):
+    """
+    Solve the axial-dispersion BVP for given parameters.
+    Returns z (plotting grid), c_A(z), c_B(z).
+    """
+    z_mesh_ = np.linspace(0, L_, n_mesh)
+    y_guess_ = np.zeros((4, z_mesh_.size))
+    y_guess_[0] = c_A_in_
+    y_guess_[2] = 0.0
+
+    sol = solve_bvp(
+        lambda z, y: dispersion_bvp_rhs(z, y, k_, u_, D_ax_),
+        lambda ya, yb: dispersion_bc(ya, yb, c_A_in_, c_B_in_, u_, D_ax_),
+        z_mesh_,
+        y_guess_
+    )
+
+    if not sol.success:
+        raise RuntimeError(sol.message)
+
+    z_plot_ = np.linspace(0, L_, n_plot)
+    y_plot_ = sol.sol(z_plot_)
+    return z_plot_, y_plot_[0], y_plot_[2]
+
+def solve_pfr_ivp(u_, L_, k_, c_A_in_, c_B_in_, n_eval=500):
+    """
+    Solve the ideal PFR (no dispersion) as an IVP for given parameters.
+    Returns z (evaluation grid), c_A(z), c_B(z).
+    """
+    z_eval_ = np.linspace(0, L_, n_eval)
+
+    sol = solve_ivp(
+        fun=lambda z, y: pfr_ivp_rhs(z, y, k_, u_),
+        t_span=(0, L_),
+        y0=[c_A_in_, c_B_in_],
+        t_eval=z_eval_,
+        method="RK45",
+        rtol=1e-9,
+        atol=1e-11
+    )
+
+    if not sol.success:
+        raise RuntimeError(sol.message)
+
+    return sol.t, sol.y[0], sol.y[1]
+
+# Color pairs: (BVP color, IVP color)
+color_pairs = [
+    ("tab:blue", "cyan"),
+    ("tab:orange", "#FDE34F"),   # neon/light orange
+    ("tab:green", "lime"),
+]
+
+
+#%%
+# Variation 1: fluid velocity, BVP vs IVP
+
+u_values = [0.5 * u, u, 2 * u]
+colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+
+plt.figure()
+for u_i, (bvp_color, ivp_color) in zip(u_values, color_pairs):
+    z_bvp, cA_bvp, _ = solve_dispersion(u_i, L, D_ax, k, c_A_in, c_B_in)
+    z_ivp, cA_ivp, _ = solve_pfr_ivp(u_i, L, k, c_A_in, c_B_in)
+
+    plt.plot(z_bvp, cA_bvp, color=bvp_color, label=f"BVP, u = {u_i:.3f} m/s")
+    plt.plot(z_ivp, cA_ivp, ":", color=ivp_color, label=f"IVP, u = {u_i:.3f} m/s")
+
+    X_A_bvp_out = conversion(cA_bvp[-1], c_A_in)
+    X_A_ivp_out = conversion(cA_ivp[-1], c_A_in)
+    rel_diff = abs(X_A_bvp_out - X_A_ivp_out) / X_A_ivp_out
+
+    print(f"u = {u_i:.3f} m/s:  X_A,out BVP = {X_A_bvp_out:.4f}, "
+          f"X_A,out IVP = {X_A_ivp_out:.4f}, rel. diff = {rel_diff:.2%}")
+
+plt.xlabel("Reactor length z / m")
+plt.ylabel("Concentration of A / mol m^-3")
+plt.title("Effect of fluid velocity: dispersion model (BVP) vs. ideal PFR (IVP)")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+
+#%%
+# Variation 2: tube diameter, BVP vs IVP
+
+d_R_values = [0.5 * d_R, d_R, 2 * d_R]
+
+plt.figure()
+for d_R_i, (bvp_color, ivp_color) in zip(d_R_values, color_pairs):
+    A_R_i = np.pi * d_R_i**2 / 4
+    u_i = V_dot / A_R_i
+
+    z_bvp, cA_bvp, _ = solve_dispersion(u_i, L, D_ax, k, c_A_in, c_B_in)
+    z_ivp, cA_ivp, _ = solve_pfr_ivp(u_i, L, k, c_A_in, c_B_in)
+
+    plt.plot(z_bvp, cA_bvp, color=bvp_color, label=f"BVP, d_R = {d_R_i*1e3:.1f} mm")
+    plt.plot(z_ivp, cA_ivp, ":", color=ivp_color, label=f"IVP, d_R = {d_R_i*1e3:.1f} mm")
+
+    X_A_bvp_out = conversion(cA_bvp[-1], c_A_in)
+    X_A_ivp_out = conversion(cA_ivp[-1], c_A_in)
+    rel_diff = abs(X_A_bvp_out - X_A_ivp_out) / X_A_ivp_out
+
+    print(f"d_R = {d_R_i*1e3:.1f} mm (u = {u_i:.3f} m/s):  "
+          f"X_A,out BVP = {X_A_bvp_out:.4f}, X_A,out IVP = {X_A_ivp_out:.4f}, "
+          f"rel. diff = {rel_diff:.2%}")
+
+plt.xlabel("Reactor length z / m")
+plt.ylabel("Concentration of A / mol m^-3")
+plt.title("Effect of tube diameter: dispersion model (BVP) vs. ideal PFR (IVP)")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+#%%
 # CSTR cascade
 
 # CSTR cascade model
@@ -453,3 +575,4 @@ plt.title("CSTR cascade approaching ideal PFR as N increases")
 plt.legend()
 plt.tight_layout()
 plt.show()
+
