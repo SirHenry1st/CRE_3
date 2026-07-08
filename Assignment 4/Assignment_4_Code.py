@@ -9,6 +9,7 @@ import pandas as pd
 #%%
 # Solver validation
 
+# Function for conversion of component A
 def conversion(c_A, c_A_in):
     """
     Calculate conversion of component A.
@@ -52,6 +53,7 @@ u_up = V_dot / A_up
 # Mean residence time in the reactor
 tau = L / u
 
+# Solution of the PFR ODE with IVP
 def pfr_ivp_rhs(z, y, k, u):
     """
     Right-hand side of the ideal plug-flow reactor model.
@@ -179,6 +181,7 @@ plt.show()
 # %%
 # Boundary value problem
 
+# Solution of ODE with BVP for axial-dispersion model
 def dispersion_bvp_rhs(z, y, k, u, D_ax):
     """
     Right-hand side of the axial-dispersion model, first-order system.
@@ -198,7 +201,7 @@ def dispersion_bvp_rhs(z, y, k, u, D_ax):
 
     return np.vstack((dcA_dz, d2cA_dz2, dcB_dz, d2cB_dz2))
 
-
+# Boundary conditions for the BVP
 def dispersion_bc(ya, yb, c_A_in, c_B_in, u, D_ax):
     """
     Danckwerts boundary conditions at z=0 and z=L for both species.
@@ -217,15 +220,15 @@ def dispersion_bc(ya, yb, c_A_in, c_B_in, u, D_ax):
     return np.array([res_A0, res_AL, res_B0, res_BL])
 
 
-# Choose a high Bo for the validation run (weak dispersion -> should match IVP)
+# High Bo for the first validation run
 Bo_high = 1e4
 D_ax = u * L / Bo_high
 
 # Mesh and initial guess
 z_mesh = np.linspace(0, L, 200)
 y_guess = np.zeros((4, z_mesh.size))
-y_guess[0] = c_A_in   # rough guess: c_A starts near inlet value
-y_guess[2] = 0.0      # rough guess: c_B starts at 0
+y_guess[0] = c_A_in                 # rough guess: c_A starts near inlet value
+y_guess[2] = 0.0                    # rough guess: c_B starts at 0
 
 bvp_solution = solve_bvp(
     lambda z, y: dispersion_bvp_rhs(z, y, k, u, D_ax),
@@ -282,7 +285,7 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
-# Conversion comparison + quantitative error at outlet
+# Conversion comparison and quantitative error at outlet
 X_A_bvp = conversion(c_A_bvp, c_A_in)
 
 plt.figure()
@@ -354,6 +357,7 @@ print(pd.DataFrame(jump_records))
 #%%
 # CSTR cascade
 
+# CSTR cascade model
 def cstr_cascade(N, c_A_in, c_B_in, k, tau):
     """
     Steady-state CSTR cascade with N equal tanks, first-order kinetics.
@@ -374,7 +378,7 @@ def cstr_cascade(N, c_A_in, c_B_in, k, tau):
 
     return c_A, c_B
 
-
+# Initial parameters for the CSTR cascade for first validation
 N = 10
 c_A_cascade, c_B_cascade = cstr_cascade(N, c_A_in, c_B_in, k, tau)
 
@@ -422,7 +426,7 @@ plt.legend()
 plt.tight_layout()
 plt.show()
 
-# Effect of N: cascade approaching plug-flow behaviour
+# Effect of N: cascade approaching plug-flow behaviour for high N
 plt.figure()
 plt.plot(
     pfr_df["z / m"],
